@@ -1,25 +1,42 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect } from 'react';
+import { Provider } from 'react-redux';
+import { store } from './store';
+import AppRouter from './AppRouter';
+import { ThemeProvider } from './components/common/ThemeProvider';
+import { PanelManagerProvider } from './components/common/PanelManager';
+import { ModalProvider } from './components/common/ModalManager';
+import { NotificationProvider } from './components/common/NotificationManager';
+import KeyboardShortcuts from './components/common/KeyboardShortcuts';
+import GlobalErrorBoundary from './components/common/GlobalErrorBoundary';
+import { handleResizeObserverError } from './utils/resizeObserverErrorHandler';
+import './styles/globals.css';
+import './styles/theme.css';
+import './styles/mobile.css';
+import './styles/data-manager.css';
+import './styles/fullscreen.css';
+import './styles/layout.css';
 
 function App() {
+  // Initialize ResizeObserver error handler on app start
+  useEffect(() => {
+    handleResizeObserverError();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <GlobalErrorBoundary>
+      <Provider store={store}>
+        <ThemeProvider>
+          <NotificationProvider>
+            <ModalProvider>
+              <PanelManagerProvider>
+                <KeyboardShortcuts />
+                <AppRouter />
+              </PanelManagerProvider>
+            </ModalProvider>
+          </NotificationProvider>
+        </ThemeProvider>
+      </Provider>
+    </GlobalErrorBoundary>
   );
 }
 

@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm start)",
+      "Bash(netstat:*)",
+      "Bash(tasklist)",
+      "Bash(findstr:*)",
+      "Bash(set PORT=3001)",
+      "Bash(npx serve:*)",
+      "Bash(taskkill:*)",
+      "Bash(xargs ls:*)",
+      "Bash(dir:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run:*)",
+      "Bash(set PORT=3005)",
+      "Bash(cmd /c:*)",
+      "WebFetch(domain:maps.googleapis.com)",
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(find:*)",
+      "Bash(for file in src/components/common/LayoutManager.tsx src/components/common/ThemeToggle.tsx src/components/map/FloatingToolPanel.tsx src/components/map/LiveCoordinateDisplay.tsx)",
+      "Bash(do sed -i 's/darkThemeHelper/lightThemeHelper/g' \"$file\")",
+      "Bash(done)",
+      "Bash(rg:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

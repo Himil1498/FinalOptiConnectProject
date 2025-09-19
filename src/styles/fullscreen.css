@@ -1,0 +1,140 @@
+/* Fullscreen mode specific styles */
+
+/* Hide default browser scrollbars in fullscreen */
+body:fullscreen {
+  overflow: hidden;
+}
+
+/* Webkit browsers */
+body:-webkit-full-screen {
+  overflow: hidden;
+}
+
+/* Firefox */
+body:-moz-full-screen {
+  overflow: hidden;
+}
+
+/* Microsoft Edge/IE */
+body:-ms-fullscreen {
+  overflow: hidden;
+}
+
+/* Fullscreen container adjustments */
+.fullscreen-container {
+  width: 100vw !important;
+  height: 100vh !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 9999 !important;
+}
+
+/* Adjust UI elements for fullscreen mode */
+.fullscreen-ui-adjust {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Map container in fullscreen */
+.fullscreen-map {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Tool panel adjustments for fullscreen */
+.fullscreen-tool-panel {
+  left: 8px !important;
+}
+
+/* Control panel adjustments for fullscreen */
+.fullscreen-controls {
+  top: 8px !important;
+  right: 8px !important;
+}
+
+/* Fullscreen modal overlay adjustments */
+.fullscreen-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 10000 !important;
+}
+
+/* Notifications in fullscreen mode */
+.fullscreen-notifications {
+  top: 16px !important;
+  right: 80px !important;
+}
+
+/* Search panel fullscreen adjustments */
+.fullscreen-search-panel {
+  max-height: calc(100vh - 32px) !important;
+  top: 16px !important;
+}
+
+/* Data panels fullscreen adjustments */
+.fullscreen-data-panel {
+  max-height: calc(100vh - 32px) !important;
+}
+
+/* Responsive adjustments for different screen sizes in fullscreen */
+@media (max-width: 768px) {
+  .fullscreen-tool-panel {
+    width: calc(100vw - 16px) !important;
+    left: 8px !important;
+    bottom: 8px !important;
+    top: auto !important;
+    transform: none !important;
+  }
+
+  .fullscreen-controls {
+    top: 8px !important;
+    right: 8px !important;
+  }
+}
+
+/* Fullscreen animation classes */
+.fullscreen-enter {
+  animation: fullscreenEnter 0.3s ease-out;
+}
+
+.fullscreen-exit {
+  animation: fullscreenExit 0.3s ease-out;
+}
+
+@keyframes fullscreenEnter {
+  from {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fullscreenExit {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+/* Ensure proper layering in fullscreen */
+.fullscreen-z-index-high {
+  z-index: 10001 !important;
+}
+
+.fullscreen-z-index-medium {
+  z-index: 10000 !important;
+}
+
+.fullscreen-z-index-low {
+  z-index: 9999 !important;
+}
