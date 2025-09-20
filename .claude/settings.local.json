@@ -25,7 +25,11 @@
       "Bash(for file in src/components/common/LayoutManager.tsx src/components/common/ThemeToggle.tsx src/components/map/FloatingToolPanel.tsx src/components/map/LiveCoordinateDisplay.tsx)",
       "Bash(do sed -i 's/darkThemeHelper/lightThemeHelper/g' \"$file\")",
       "Bash(done)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(set PORT=3006)",
+      "Bash(tasklist:*)",
+      "Bash(cat:*)",
+      "Bash(set PORT=3007)"
     ],
     "deny": [],
     "ask": []

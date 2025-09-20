@@ -1,4 +1,89 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { validateIndiaGeofencePrecise, preloadIndiaBoundaryData } from '../../utils/preciseIndiaGeofencing';
+
+// Sidebar-aware positioning hook for consistent UI layout
+const useSidebarAwarePositioning = () => {
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const checkSidebarState = () => {
+      const selectors = [
+        '.dashboard-sidebar',
+        '[class*="sidebar"]',
+        'nav[class*="left"]',
+        'aside',
+        '[class*="navigation"]',
+        '[class*="menu"]',
+        '.fixed.left-0',
+        '.fixed.inset-y-0'
+      ];
+
+      let sidebar = null;
+      for (const selector of selectors) {
+        sidebar = document.querySelector(selector);
+        if (sidebar) break;
+      }
+
+      if (sidebar) {
+        const rect = sidebar.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(sidebar);
+        const isVisible = computedStyle.display !== 'none' &&
+                         computedStyle.visibility !== 'hidden' &&
+                         rect.width > 0;
+
+        if (isVisible) {
+          const isCollapsed = rect.width < 80;
+          setSidebarCollapsed(isCollapsed);
+          setSidebarWidth(rect.width + 16);
+        } else {
+          setSidebarWidth(16);
+          setSidebarCollapsed(false);
+        }
+      } else {
+        setSidebarWidth(16);
+        setSidebarCollapsed(false);
+      }
+    };
+
+    checkSidebarState();
+    setTimeout(checkSidebarState, 10);
+
+    let rafId: number;
+    const observer = new MutationObserver(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(checkSidebarState);
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'data-collapsed', 'data-expanded', 'data-state']
+    });
+
+    window.addEventListener('resize', checkSidebarState);
+
+    const handleClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('[class*="sidebar"], [class*="menu"], [class*="nav"], button') ||
+          target.getAttribute('aria-expanded') !== null) {
+        requestAnimationFrame(checkSidebarState);
+        requestAnimationFrame(() => requestAnimationFrame(checkSidebarState));
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', checkSidebarState);
+      document.removeEventListener('click', handleClick, true);
+    };
+  }, []);
+
+  return { sidebarWidth, sidebarCollapsed };
+};
 
 interface ElevationPoint {
   id: string;
@@ -44,6 +129,7 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
   const [showTerrain, setShowTerrain] = useState(false);
   const [loading, setLoading] = useState(false);
   const [profileMode, setProfileMode] = useState(false);
+  const { sidebarWidth, sidebarCollapsed } = useSidebarAwarePositioning();
   const chartRef = useRef<HTMLCanvasElement>(null);
 
   // Convert pixel coordinates to lat/lng (India bounds approximation)
@@ -174,6 +260,42 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
       const y = event.clientY - rect.top;
       const { lat, lng } = pixelToLatLng(x, y);
 
+      try {
+        // Strict validation for India boundaries
+        const validation = await validateIndiaGeofencePrecise(lat, lng, {
+          strictMode: true,
+          showWarnings: true,
+          allowNearBorder: false,
+          borderTolerance: 0
+        });
+
+        if (!validation.isValid) {
+          // Show warning but continue tool usage
+          const notificationEvent = new CustomEvent('showNotification', {
+            detail: {
+              type: 'warning',
+              title: 'Location Outside India Boundaries',
+              message: `${validation.message} ${validation.suggestedAction || ''}`,
+              duration: 8000
+            }
+          });
+          window.dispatchEvent(notificationEvent);
+          // Continue with elevation query (don't return early)
+        }
+      } catch (error) {
+        console.error('Error validating geographic boundaries:', error);
+        const notificationEvent = new CustomEvent('showNotification', {
+          detail: {
+            type: 'error',
+            title: 'Validation Error',
+            message: 'Unable to validate location boundaries. Please try again.',
+            duration: 5000
+          }
+        });
+        window.dispatchEvent(notificationEvent);
+        return;
+      }
+
       setLoading(true);
 
       try {
@@ -206,6 +328,62 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
     },
     [isActive, profileMode, pixelToLatLng, generateMockElevation]
   );
+
+  // Add Google Maps click listener for proper geographic validation enforcement
+  useEffect(() => {
+    if (!map || !isActive) return;
+
+    const handleGoogleMapClick = async (event: google.maps.MapMouseEvent) => {
+      if (!event.latLng) return;
+
+      const lat = event.latLng.lat();
+      const lng = event.latLng.lng();
+
+      try {
+        // Strict validation for India boundaries
+        const validation = await validateIndiaGeofencePrecise(lat, lng, {
+          strictMode: true,
+          showWarnings: true,
+          allowNearBorder: false,
+          borderTolerance: 0
+        });
+
+        if (!validation.isValid) {
+          // Show warning but continue tool usage
+          const notificationEvent = new CustomEvent('showNotification', {
+            detail: {
+              type: 'warning',
+              title: 'Location Outside India Boundaries',
+              message: `${validation.message} ${validation.suggestedAction || ''}`,
+              duration: 8000
+            }
+          });
+          window.dispatchEvent(notificationEvent);
+          // Continue with elevation query (don't return early)
+        }
+      } catch (error) {
+        console.error('Error validating geographic boundaries:', error);
+        const notificationEvent = new CustomEvent('showNotification', {
+          detail: {
+            type: 'error',
+            title: 'Validation Error',
+            message: 'Unable to validate location boundaries. Please try again.',
+            duration: 5000
+          }
+        });
+        window.dispatchEvent(notificationEvent);
+        return;
+      }
+    };
+
+    const clickListener = map.addListener('click', handleGoogleMapClick);
+
+    return () => {
+      if (clickListener) {
+        clickListener.remove();
+      }
+    };
+  }, [map, isActive, onToggle]);
 
   // Clear all points
   const clearPoints = () => {
@@ -326,9 +504,18 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
 
   return (
     <>
-      {/* Tool Controls - Only show when activated */}
+      {/* Tool Controls - Positioned below Polygon toolbox */}
       {isActive && (
-        <div className="fixed bottom-4 right-1/4 transform translate-x-1/2 z-20">
+        <div
+          className="fixed animate-in slide-in-from-left-4 duration-300 layout-transition"
+          style={{
+            left: `${sidebarWidth}px`,
+            top: '620px', // Position below Polygon toolbox
+            zIndex: 1030, // Lower than both Distance and Polygon toolboxes
+            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            willChange: 'left, transform'
+          }}
+        >
         <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-4 max-w-md border border-gray-200/50">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-900">Elevation Tool</h3>

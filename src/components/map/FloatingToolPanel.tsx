@@ -12,7 +12,8 @@ import {
   Bars3Icon,
   ShieldCheckIcon,
   WrenchScrewdriverIcon,
-  CubeIcon
+  CubeIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { useFullscreen } from '../../hooks/useFullscreen';
 import { themeClasses, buttonVariants, focusStyles, componentPatterns } from '../../utils/lightThemeHelper';
@@ -63,42 +64,51 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const { isFullscreen } = useFullscreen();
 
+  // Simple tool activation without multi-tool functionality
+  const handleToolActivation = (toolId: string) => {
+    if (toolId === 'search') {
+      onTogglePanel('search');
+    } else {
+      onToolActivation(toolId);
+    }
+  };
+
   const tools = [
     {
       id: 'search',
       icon: MagnifyingGlassIcon,
       label: 'Search',
-      isActive: showSearchSystem,
+      isActive: showSearchSystem, // Use actual tool state
       color: 'cyan',
       iconColor: 'text-cyan-600',
-      onClick: () => onTogglePanel('search')
+      onClick: () => handleToolActivation('search')
     },
     {
       id: 'distance',
       icon: '📏',
       label: 'Distance',
-      isActive: isDistanceMeasuring,
+      isActive: isDistanceMeasuring, // Use actual tool state
       color: 'blue',
       iconColor: 'text-blue-600',
-      onClick: () => onToolActivation('distance')
+      onClick: () => handleToolActivation('distance')
     },
     {
       id: 'polygon',
       icon: '🔺',
       label: 'Polygon',
-      isActive: isPolygonDrawing,
+      isActive: isPolygonDrawing, // Use actual tool state
       color: 'green',
       iconColor: 'text-green-600',
-      onClick: () => onToolActivation('polygon')
+      onClick: () => handleToolActivation('polygon')
     },
     {
       id: 'elevation',
       icon: '⛰️',
       label: 'Elevation',
-      isActive: isElevationActive,
+      isActive: isElevationActive, // Use actual tool state
       color: 'purple',
       iconColor: 'text-purple-600',
-      onClick: () => onToolActivation('elevation')
+      onClick: () => handleToolActivation('elevation')
     }
   ];
 
@@ -413,7 +423,9 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
             </div>
           </>
         </div>
+
       </div>
+
     </div>
   );
 };

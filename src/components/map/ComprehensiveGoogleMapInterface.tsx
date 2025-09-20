@@ -438,18 +438,25 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
     isGeofencingActive
   );
 
-  // Tool handlers
+  // Tool handlers - Fixed synchronization
   const handleToolActivation = useCallback(
     (toolName: string) => {
-      // Deactivate all tools first
-      setIsDistanceMeasuring(false);
-      setIsPolygonDrawing(false);
-      setIsElevationActive(false);
-
-      // Activate the selected tool
+      // Handle tool toggling properly
       switch (toolName) {
         case "distance":
-          if (!isDistanceMeasuring) {
+          if (isDistanceMeasuring) {
+            // If already active, deactivate
+            setIsDistanceMeasuring(false);
+            addNotification({
+              type: "info",
+              title: "Distance Tool Deactivated",
+              message: "Distance measurement stopped",
+              duration: 2000
+            });
+          } else {
+            // Deactivate other tools and activate distance
+            setIsPolygonDrawing(false);
+            setIsElevationActive(false);
             setIsDistanceMeasuring(true);
             addNotification({
               type: "info",
@@ -460,7 +467,19 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           }
           break;
         case "polygon":
-          if (!isPolygonDrawing) {
+          if (isPolygonDrawing) {
+            // If already active, deactivate
+            setIsPolygonDrawing(false);
+            addNotification({
+              type: "info",
+              title: "Polygon Tool Deactivated",
+              message: "Polygon drawing stopped",
+              duration: 2000
+            });
+          } else {
+            // Deactivate other tools and activate polygon
+            setIsDistanceMeasuring(false);
+            setIsElevationActive(false);
             setIsPolygonDrawing(true);
             addNotification({
               type: "info",
@@ -471,7 +490,19 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           }
           break;
         case "elevation":
-          if (!isElevationActive) {
+          if (isElevationActive) {
+            // If already active, deactivate
+            setIsElevationActive(false);
+            addNotification({
+              type: "info",
+              title: "Elevation Tool Deactivated",
+              message: "Elevation analysis stopped",
+              duration: 2000
+            });
+          } else {
+            // Deactivate other tools and activate elevation
+            setIsDistanceMeasuring(false);
+            setIsPolygonDrawing(false);
             setIsElevationActive(true);
             addNotification({
               type: "info",
@@ -650,7 +681,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
         {/* Tool Components */}
         <DistanceMeasurementTool
           isActive={isDistanceMeasuring}
-          onToggle={() => setIsDistanceMeasuring(!isDistanceMeasuring)}
+          onToggle={() => handleToolActivation('distance')}
           map={mapInstance}
           mapWidth={800}
           mapHeight={600}
@@ -658,7 +689,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
 
         <PolygonDrawingTool
           isActive={isPolygonDrawing}
-          onToggle={() => setIsPolygonDrawing(!isPolygonDrawing)}
+          onToggle={() => handleToolActivation('polygon')}
           map={mapInstance}
           mapWidth={800}
           mapHeight={600}
@@ -666,7 +697,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
 
         <ElevationTool
           isActive={isElevationActive}
-          onToggle={() => setIsElevationActive(!isElevationActive)}
+          onToggle={() => handleToolActivation('elevation')}
           map={mapInstance}
           mapWidth={800}
           mapHeight={600}
@@ -807,31 +838,6 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
             </div>
           </div>
         )}
-
-        {/* Tool Components */}
-        <DistanceMeasurementTool
-          isActive={isDistanceMeasuring}
-          onToggle={() => setIsDistanceMeasuring(!isDistanceMeasuring)}
-          map={mapInstance}
-          mapWidth={800}
-          mapHeight={600}
-        />
-
-        <PolygonDrawingTool
-          isActive={isPolygonDrawing}
-          onToggle={() => setIsPolygonDrawing(!isPolygonDrawing)}
-          map={mapInstance}
-          mapWidth={800}
-          mapHeight={600}
-        />
-
-        <ElevationTool
-          isActive={isElevationActive}
-          onToggle={() => setIsElevationActive(!isElevationActive)}
-          map={mapInstance}
-          mapWidth={800}
-          mapHeight={600}
-        />
 
         <GeofencingSystem
           assignedStates={assignedStates}

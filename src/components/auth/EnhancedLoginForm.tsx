@@ -188,12 +188,13 @@ const EnhancedLoginForm: React.FC = () => {
         <div className="w-full lg:w-1/2 bg-white rounded-2xl lg:rounded-l-none shadow-2xl p-8 lg:p-12">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent mb-3">
                 Welcome Back
               </h2>
-              <p className="text-gray-600">
+              <p className="text-gray-600 font-medium">
                 Please sign in to your account
               </p>
+              <div className="w-16 h-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mx-auto mt-3"></div>
             </div>
 
             {loginError && (
@@ -206,12 +207,13 @@ const EnhancedLoginForm: React.FC = () => {
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <span className="text-indigo-600 mr-2">📧</span>
                   Email Address
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <UserIcon className="h-5 w-5 text-gray-400" />
+                    <UserIcon className="h-5 w-5 text-indigo-500" />
                   </div>
                   <input
                     id="email"
@@ -237,12 +239,13 @@ const EnhancedLoginForm: React.FC = () => {
 
               {/* Password Field */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <span className="text-indigo-600 mr-2">🔒</span>
                   Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <LockClosedIcon className="h-5 w-5 text-gray-400" />
+                    <LockClosedIcon className="h-5 w-5 text-indigo-500" />
                   </div>
                   <input
                     id="password"
@@ -264,9 +267,9 @@ const EnhancedLoginForm: React.FC = () => {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-indigo-600 transition-colors duration-200" />
+                      <EyeSlashIcon className="h-5 w-5 text-indigo-500 hover:text-indigo-700 transition-colors duration-200" />
                     ) : (
-                      <EyeIcon className="h-5 w-5 text-gray-400 hover:text-indigo-600 transition-colors duration-200" />
+                      <EyeIcon className="h-5 w-5 text-indigo-500 hover:text-indigo-700 transition-colors duration-200" />
                     )}
                   </button>
                 </div>
@@ -288,12 +291,12 @@ const EnhancedLoginForm: React.FC = () => {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  <label htmlFor="remember-me" className="ml-2 block text-sm font-medium text-gray-800">
                     Remember me
                   </label>
                 </div>
-                <button type="button" className="text-sm text-indigo-600 hover:text-indigo-500 transition-all duration-200 hover:scale-105 active:scale-95 px-2 py-1 rounded">
-                  Forgot password?
+                <button type="button" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-all duration-200 hover:scale-105 active:scale-95 px-3 py-1 rounded-lg hover:bg-indigo-50">
+                  🔄 Forgot password?
                 </button>
               </div>
 
@@ -301,16 +304,21 @@ const EnhancedLoginForm: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:scale-105 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0 transition-all duration-300 ease-in-out"
+                className="w-full flex justify-center py-4 px-6 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-800 hover:scale-105 hover:shadow-xl hover:-translate-y-1 active:scale-95 active:translate-y-0 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0 transition-all duration-300 ease-in-out relative overflow-hidden group"
               >
-                {loading ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
-                  </div>
-                ) : (
-                  'Sign In'
-                )}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <div className="relative z-10 flex items-center">
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🚀 Sign In</span>
+                    </>
+                  )}
+                </div>
               </button>
             </form>
 
@@ -333,26 +341,37 @@ const EnhancedLoginForm: React.FC = () => {
                       key={account.email}
                       type="button"
                       onClick={() => fillDemoCredentials(account.email)}
-                      className={`p-3 border rounded-lg text-left hover:shadow-lg hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 ease-in-out ${account.color} hover:scale-105 cursor-pointer`}
+                      className={`p-4 border-2 rounded-xl text-left hover:shadow-xl hover:-translate-y-2 active:translate-y-0 active:scale-95 transition-all duration-300 ease-in-out ${account.color} hover:scale-105 cursor-pointer relative overflow-hidden group backdrop-blur-sm`}
+                      style={{
+                        backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)'
+                      }}
                     >
-                      <div className="flex items-center mb-2">
-                        <IconComponent className="w-4 h-4 mr-2" />
-                        <span className="text-xs font-semibold">{account.role}</span>
-                      </div>
-                      <div className="text-xs opacity-80 truncate">
-                        {account.email}
-                      </div>
-                      <div className="text-xs opacity-60 mt-1">
-                        {account.description}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center mb-2">
+                          <IconComponent className="w-5 h-5 mr-3 drop-shadow-sm" />
+                          <span className="text-sm font-bold tracking-wide">{account.role}</span>
+                        </div>
+                        <div className="text-xs opacity-90 truncate font-medium">
+                          {account.email}
+                        </div>
+                        <div className="text-xs opacity-75 mt-1 font-medium">
+                          {account.description}
+                        </div>
                       </div>
                     </button>
                   );
                 })}
               </div>
 
-              <p className="mt-4 text-center text-xs text-gray-500">
-                Password for all demo accounts: <span className="font-mono font-semibold">password</span>
-              </p>
+              <div className="mt-6 text-center">
+                <p className="text-sm font-medium text-gray-700 mb-1">
+                  🔑 Demo Account Access
+                </p>
+                <p className="text-xs text-gray-600">
+                  Password for all accounts: <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border">password</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
