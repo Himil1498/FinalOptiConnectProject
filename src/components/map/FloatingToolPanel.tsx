@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MagnifyingGlassIcon,
   UsersIcon,
@@ -12,8 +12,7 @@ import {
   Bars3Icon,
   ShieldCheckIcon,
   WrenchScrewdriverIcon,
-  CubeIcon,
-  SparklesIcon
+  CubeIcon
 } from '@heroicons/react/24/outline';
 import { useFullscreen } from '../../hooks/useFullscreen';
 import { themeClasses, buttonVariants, focusStyles, componentPatterns } from '../../utils/lightThemeHelper';
@@ -37,6 +36,7 @@ interface FloatingToolPanelProps {
   showInfrastructureData: boolean;
   showDataManager: boolean;
   showLayoutManager: boolean;
+  showWorkflowPresets: boolean;
 
   // Handlers
   onToolActivation: (toolName: string) => void;
@@ -57,12 +57,56 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   showInfrastructureData,
   showDataManager,
   showLayoutManager,
+  showWorkflowPresets,
   onToolActivation,
   onTogglePanel,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isFullscreen } = useFullscreen();
+
+  // Detect sidebar collapse state
+  useEffect(() => {
+    const checkSidebarState = () => {
+      const selectors = [
+        ".dashboard-sidebar",
+        '[class*="sidebar"]',
+        'nav[class*="left"]',
+        "aside",
+        '[class*="navigation"]'
+      ];
+
+      let sidebar = null;
+      for (const selector of selectors) {
+        sidebar = document.querySelector(selector);
+        if (sidebar) break;
+      }
+
+      if (sidebar) {
+        const rect = sidebar.getBoundingClientRect();
+        setSidebarCollapsed(rect.width < 80);
+      }
+    };
+
+    checkSidebarState();
+    const observer = new MutationObserver(checkSidebarState);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style"]
+    });
+
+    window.addEventListener("resize", checkSidebarState);
+    document.addEventListener("click", checkSidebarState);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", checkSidebarState);
+      document.removeEventListener("click", checkSidebarState);
+    };
+  }, []);
 
   // Simple tool activation without multi-tool functionality
   const handleToolActivation = (toolId: string) => {
@@ -74,6 +118,15 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   };
 
   const tools = [
+    {
+      id: 'workflow',
+      icon: '🚀',
+      label: 'Workflows',
+      isActive: showWorkflowPresets,
+      color: 'indigo',
+      iconColor: 'text-indigo-600',
+      onClick: () => onTogglePanel('workflow')
+    },
     {
       id: 'search',
       icon: MagnifyingGlassIcon,
@@ -206,27 +259,48 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   return (
     <div className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-50
                     transition-all duration-300 ${isCollapsed ? 'w-12' : 'w-52'}
-                    ${isFullscreen ? '' : ''}`}>
-      <div className={`h-full bg-gradient-to-b from-white to-gray-50/95 backdrop-blur-sm border-r border-gray-200/50 shadow-xl flex flex-col`}>
-        {/* Header */}
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-2 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white`}>
+                    ${isFullscreen ? '' : ''}
+                    max-w-[calc(100vw-40px)] sm:max-w-none`}>
+      <div className={`h-full bg-gradient-to-b from-white via-gray-50/98 to-gray-100/95 backdrop-blur-sm border-r-2 border-gray-200/60 shadow-2xl flex flex-col`}>
+        {/* Header - Enhanced with better styling */}
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-3 border-b-2 border-gray-200/80 bg-gradient-to-r from-white via-gray-50 to-white shadow-sm`}>
           {!isCollapsed && (
-            <h3 className={`text-xs font-semibold text-gray-800 flex items-center`}>
-              <Bars3Icon className="w-4 h-4 mr-2 text-indigo-600" />
-              Tools Panel
+            <h3 className={`text-sm font-bold text-gray-900 flex items-center`}>
+              <Bars3Icon className="w-5 h-5 mr-2 text-indigo-600" />
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Tools Panel
+              </span>
             </h3>
           )}
           <SimpleTooltip content={isCollapsed ? 'Expand Panel' : 'Collapse Panel'} position="right">
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className={`p-2 ${themeClasses.interactive.subtle} rounded transition-all duration-300 ease-in-out ${focusStyles.default}
-                         hover:scale-110 hover:bg-gray-100 hover:shadow-md active:scale-95`}
+              className={`relative group p-2 ${themeClasses.interactive.subtle} rounded-lg transition-all duration-300 ease-in-out ${focusStyles.default}
+                         hover:scale-110 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:shadow-lg hover:border-blue-200 border border-transparent active:scale-95
+                         ${isCollapsed ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' : ''}`}
             >
-            {isCollapsed ? (
-              <ChevronRightIcon className={`h-4 w-4 ${themeClasses.text.tertiary}`} />
-            ) : (
-              <ChevronLeftIcon className={`h-4 w-4 ${themeClasses.text.tertiary}`} />
-            )}
+              {/* Animated background glow */}
+              <div className={`absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${isCollapsed ? 'opacity-10' : ''}`}></div>
+
+              {/* Icon container with enhanced styling */}
+              <div className="relative flex items-center justify-center">
+                {isCollapsed ? (
+                  <div className="flex items-center">
+                    <ChevronRightIcon className={`h-4 w-4 ${themeClasses.text.tertiary} group-hover:text-blue-600 transition-colors duration-200`} />
+                    <div className="ml-1 w-1 h-4 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-200"></div>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <div className="mr-1 w-1 h-4 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    <ChevronLeftIcon className={`h-4 w-4 ${themeClasses.text.tertiary} group-hover:text-blue-600 transition-colors duration-200`} />
+                  </div>
+                )}
+              </div>
+
+              {/* Pulse animation for collapsed state */}
+              {isCollapsed && (
+                <div className="absolute inset-0 rounded-lg border-2 border-blue-300 opacity-0 animate-ping"></div>
+              )}
             </button>
           </SimpleTooltip>
         </div>
@@ -236,9 +310,11 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
           {/* Core Tools Section */}
           {!isCollapsed && (
             <div className="mb-1">
-              <h4 className={`text-xs font-medium text-blue-600 uppercase tracking-wide mb-1 flex items-center`}>
-                <MapIcon className="w-3 h-3 mr-1" />
-                Map Tools
+              <h4 className={`text-xs font-bold text-blue-700 uppercase tracking-wider mb-1 flex items-center`}>
+                <MapIcon className="w-4 h-4 mr-1.5" />
+                <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  Map Tools
+                </span>
               </h4>
             </div>
           )}
@@ -249,7 +325,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                   key={tool.id}
                   onClick={tool.onClick}
                   className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                            rounded-lg transition-all duration-300 ease-in-out text-xs font-medium ${focusStyles.default}
+                            rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
                             border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
                             active:scale-95 active:translate-y-0 cursor-pointer
                             ${tool.isActive
@@ -259,9 +335,9 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                 >
                   <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
                     {typeof tool.icon === 'string' ? (
-                      <span className="text-sm">{tool.icon}</span>
+                      <span className={`${isCollapsed ? 'text-lg' : 'text-sm'}`}>{tool.icon}</span>
                     ) : (
-                      <tool.icon className={`h-4 w-4 ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
+                      <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
                     )}
                   </div>
                   {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
@@ -286,19 +362,17 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
             <>
               {!isCollapsed && (
                 <div className="mb-1">
-                  <div className="relative mb-2">
+                  <div className="relative mb-3">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
+                      <div className="w-full border-t border-gradient border-indigo-200"></div>
                     </div>
-                    <div className="relative flex justify-center text-xs">
-                      <span className="px-2 bg-white text-gray-500">
-                        <ShieldCheckIcon className="w-3 h-3 inline mr-1" />
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-3 py-1 bg-white text-gray-500 rounded-full border border-indigo-200 shadow-sm">
+                        <ShieldCheckIcon className="w-3 h-3 inline mr-1 text-indigo-500" />
+                        <span className="text-indigo-600 font-semibold">Admin</span>
                       </span>
                     </div>
                   </div>
-                  <h4 className={`text-xs font-medium text-indigo-600 uppercase tracking-wide mb-1`}>
-                    Admin Tools
-                  </h4>
                 </div>
               )}
               <div className={`grid gap-1 ${isCollapsed ? 'grid-cols-1' : 'grid-cols-1'}`}>
@@ -307,7 +381,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                 key={tool.id}
                 onClick={tool.onClick}
                 className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                          rounded-lg transition-all duration-300 ease-in-out text-xs font-medium ${focusStyles.default}
+                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
                           border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
                           active:scale-95 active:translate-y-0 cursor-pointer
                           ${tool.isActive
@@ -317,7 +391,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                 title={tool.label}
               >
                 <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
-                  <tool.icon className={`h-4 w-4 ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
+                  <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
                 </div>
                 {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
                 {tool.isActive && !isCollapsed && (
@@ -334,19 +408,17 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
             <>
               {!isCollapsed && (
                 <div className="mb-2">
-                  <div className="relative mb-4">
+                  <div className="relative mb-3">
                     <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gradient bg-gradient-to-r from-transparent via-emerald-300 to-transparent"></div>
+                      <div className="w-full border-t border-gradient border-emerald-200"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">
-                        <WrenchScrewdriverIcon className="w-4 h-4 inline mr-1" />
+                      <span className="px-3 py-1 bg-white text-gray-500 rounded-full border border-emerald-200 shadow-sm">
+                        <WrenchScrewdriverIcon className="w-3 h-3 inline mr-1 text-emerald-500" />
+                        <span className="text-emerald-600 font-semibold">Manager</span>
                       </span>
                     </div>
                   </div>
-                  <h4 className={`text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-2`}>
-                    Manager Tools
-                  </h4>
                 </div>
               )}
               <div className={`grid gap-1 ${isCollapsed ? 'grid-cols-1' : 'grid-cols-1'}`}>
@@ -355,7 +427,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                 key={tool.id}
                 onClick={tool.onClick}
                 className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                          rounded-lg transition-all duration-300 ease-in-out text-xs font-medium ${focusStyles.default}
+                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
                           border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
                           active:scale-95 active:translate-y-0 cursor-pointer
                           ${tool.isActive
@@ -365,7 +437,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                 title={tool.label}
               >
                 <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
-                  <tool.icon className={`h-4 w-4 ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
+                  <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
                 </div>
                 {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
                 {tool.isActive && !isCollapsed && (
@@ -381,19 +453,17 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
           <>
             {!isCollapsed && (
               <div className="mb-2">
-                <div className="relative mb-4">
+                <div className="relative mb-3">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gradient bg-gradient-to-r from-transparent via-violet-300 to-transparent"></div>
+                    <div className="w-full border-t border-gradient border-violet-200"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">
-                      <CubeIcon className="w-4 h-4 inline mr-1" />
+                    <span className="px-3 py-1 bg-white text-gray-500 rounded-full border border-violet-200 shadow-sm">
+                      <CubeIcon className="w-3 h-3 inline mr-1 text-violet-500" />
+                      <span className="text-violet-600 font-semibold">Data</span>
                     </span>
                   </div>
                 </div>
-                <h4 className={`text-xs font-semibold text-violet-600 uppercase tracking-wide mb-2`}>
-                  Data Tools
-                </h4>
               </div>
             )}
             <div className={`grid gap-1 ${isCollapsed ? 'grid-cols-1' : 'grid-cols-1'}`}>
@@ -402,7 +472,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                 key={tool.id}
                 onClick={tool.onClick}
                 className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                          rounded-lg transition-all duration-300 ease-in-out text-xs font-medium ${focusStyles.default}
+                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
                           border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
                           active:scale-95 active:translate-y-0 cursor-pointer
                           ${tool.isActive
@@ -412,7 +482,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                 title={tool.label}
               >
                 <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
-                  <tool.icon className={`h-4 w-4 ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
+                  <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
                 </div>
                 {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
                 {tool.isActive && !isCollapsed && (

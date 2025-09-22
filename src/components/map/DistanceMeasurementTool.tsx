@@ -1,5 +1,9 @@
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { validateIndiaGeofence } from "../../utils/indiaGeofencing";
+import { Z_INDEX } from "../../constants/zIndex";
+import { TOOLBOX_POSITIONING } from "../../constants/layout";
+import StandardDialog, { ConfirmDialog } from "../common/StandardDialog";
+import StreetViewWithMarkings from "./StreetViewWithMarkings";
 
 // Hook to detect sidebar state and calculate positioning
 const useSidebarAwarePositioning = () => {
@@ -115,12 +119,25 @@ interface Point {
   y: number;
 }
 
+interface SavedMeasurement {
+  id: string;
+  name: string;
+  points: Point[];
+  totalDistance: number;
+  unit: "km" | "miles";
+  createdAt: Date;
+  notes?: string;
+}
+
 interface DistanceMeasurementToolProps {
   isActive: boolean;
   onToggle: () => void;
   map?: google.maps.Map | null;
   mapWidth: number;
   mapHeight: number;
+  onDataChange?: (hasData: boolean) => void;
+  isPrimaryTool?: boolean;
+  multiToolMode?: boolean;
 }
 
 const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
@@ -128,13 +145,34 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
   onToggle,
   map,
   mapWidth,
-  mapHeight
+  mapHeight,
+  onDataChange,
+  isPrimaryTool = false,
+  multiToolMode = false
 }) => {
   const [points, setPoints] = useState<Point[]>([]);
   const [unit, setUnit] = useState<"km" | "miles">("km");
   const [showStreetView, setShowStreetView] = useState(false);
   const [showMeasurementTable, setShowMeasurementTable] = useState(true);
-  const { sidebarWidth, sidebarCollapsed } = useSidebarAwarePositioning();
+  const [savedMeasurements, setSavedMeasurements] = useState<SavedMeasurement[]>([]);
+  const [selectedMeasurementId, setSelectedMeasurementId] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [measurementName, setMeasurementName] = useState("");
+  const [measurementNotes, setMeasurementNotes] = useState("");
+  const [editingMeasurementId, setEditingMeasurementId] = useState<string | null>(null);
+  const [showSavedTable, setShowSavedTable] = useState(false);
+  const [showStreetViewModal, setShowStreetViewModal] = useState(false);
+  const [streetViewCenterPoint, setStreetViewCenterPoint] = useState<Point | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingMeasurementId, setDeletingMeasurementId] = useState<string | null>(null);
+  const { sidebarWidth } = useSidebarAwarePositioning();
+
+  // Notify parent about data changes
+  useEffect(() => {
+    if (onDataChange) {
+      onDataChange(points.length > 0 || savedMeasurements.length > 0);
+    }
+  }, [points.length, savedMeasurements.length, onDataChange]);
 
   // Convert lat/lng to pixel coordinates
   const latLngToPixel = useCallback(
@@ -367,6 +405,10 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
   // Clear all points
   const clearPoints = () => {
     setPoints([]);
+    // Keep the saved measurements table open if there are saved measurements
+    if (savedMeasurements.length > 0 && !showSavedTable) {
+      setShowSavedTable(true);
+    }
   };
 
   // Remove last point
@@ -374,67 +416,249 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
     setPoints((prev) => prev.slice(0, -1));
   };
 
-  // Generate street view URL
-  const getStreetViewUrl = (point: Point) => {
-    return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${point.lat},${point.lng}`;
-  };
+  // Open street view modal with markings
+  const openStreetView = useCallback((centerPoint: Point) => {
+    setStreetViewCenterPoint(centerPoint);
+    setShowStreetViewModal(true);
+  }, []);
+
+  // Generate lines for street view (segments between consecutive points)
+  const generateLinesForStreetView = useMemo(() => {
+    if (points.length < 2) return [];
+
+    const lines = [];
+    for (let i = 0; i < points.length - 1; i++) {
+      const distance = calculateDistance(points[i], points[i + 1]);
+      lines.push({
+        start: points[i],
+        end: points[i + 1],
+        distance: distance * 1000 // Convert km to meters for street view display
+      });
+    }
+    return lines;
+  }, [points, calculateDistance]);
+
+  // Save current measurement
+  const saveMeasurement = useCallback(() => {
+    if (points.length < 2) {
+      const event = new CustomEvent("showNotification", {
+        detail: {
+          type: "warning",
+          title: "Insufficient Data",
+          message: "Please create a measurement with at least 2 points before saving.",
+          duration: 5000
+        }
+      });
+      window.dispatchEvent(event);
+      return;
+    }
+
+    if (!measurementName.trim()) {
+      const event = new CustomEvent("showNotification", {
+        detail: {
+          type: "warning",
+          title: "Name Required",
+          message: "Please enter a name for the measurement.",
+          duration: 5000
+        }
+      });
+      window.dispatchEvent(event);
+      return;
+    }
+
+    const savedMeasurement: SavedMeasurement = {
+      id: editingMeasurementId || `measurement-${Date.now()}`,
+      name: measurementName,
+      points: [...points],
+      totalDistance: cumulativeDistance,
+      unit,
+      createdAt: editingMeasurementId
+        ? savedMeasurements.find((m) => m.id === editingMeasurementId)?.createdAt || new Date()
+        : new Date(),
+      notes: measurementNotes
+    };
+
+    if (editingMeasurementId) {
+      setSavedMeasurements((prev) =>
+        prev.map((m) => (m.id === editingMeasurementId ? savedMeasurement : m))
+      );
+    } else {
+      setSavedMeasurements((prev) => [...prev, savedMeasurement]);
+    }
+
+    setShowSaveDialog(false);
+    setMeasurementName("");
+    setMeasurementNotes("");
+    setEditingMeasurementId(null);
+
+    const event = new CustomEvent("showNotification", {
+      detail: {
+        type: "success",
+        title: editingMeasurementId ? "Measurement Updated" : "Measurement Saved",
+        message: `Distance measurement "${savedMeasurement.name}" has been ${
+          editingMeasurementId ? "updated" : "saved"
+        } successfully.`,
+        duration: 3000
+      }
+    });
+    window.dispatchEvent(event);
+  }, [points, cumulativeDistance, unit, measurementName, measurementNotes, editingMeasurementId, savedMeasurements]);
+
+  // Load saved measurement
+  const loadMeasurement = useCallback((measurement: SavedMeasurement) => {
+    setPoints(measurement.points);
+    setUnit(measurement.unit);
+    setSelectedMeasurementId(measurement.id);
+
+    const event = new CustomEvent("showNotification", {
+      detail: {
+        type: "success",
+        title: "Measurement Loaded",
+        message: `Distance measurement "${measurement.name}" loaded successfully.`,
+        duration: 3000
+      }
+    });
+    window.dispatchEvent(event);
+  }, []);
+
+  // Edit saved measurement
+  const editMeasurement = useCallback((measurement: SavedMeasurement) => {
+    setMeasurementName(measurement.name);
+    setMeasurementNotes(measurement.notes || "");
+    setEditingMeasurementId(measurement.id);
+    setShowSaveDialog(true);
+  }, []);
+
+  // Show delete confirmation
+  const showDeleteConfirmation = useCallback((measurementId: string) => {
+    setDeletingMeasurementId(measurementId);
+    setShowDeleteConfirm(true);
+  }, []);
+
+  // Delete saved measurement
+  const deleteMeasurement = useCallback(() => {
+    if (!deletingMeasurementId) return;
+
+    const measurement = savedMeasurements.find((m) => m.id === deletingMeasurementId);
+    if (!measurement) return;
+
+    setSavedMeasurements((prev) => prev.filter((m) => m.id !== deletingMeasurementId));
+
+    // If the deleted measurement is currently selected, clear it from the map
+    if (selectedMeasurementId === deletingMeasurementId) {
+      setSelectedMeasurementId(null);
+      setPoints([]); // Clear the points from the map
+    }
+
+    setShowDeleteConfirm(false);
+    setDeletingMeasurementId(null);
+
+    const event = new CustomEvent("showNotification", {
+      detail: {
+        type: "success",
+        title: "Measurement Deleted",
+        message: `Distance measurement "${measurement.name}" has been deleted and removed from map.`,
+        duration: 3000
+      }
+    });
+    window.dispatchEvent(event);
+  }, [savedMeasurements, selectedMeasurementId, deletingMeasurementId]);
 
   return (
     <>
-      {/* Tool Controls - Dynamic positioning based on sidebar state */}
+      {/* Tool Controls - Fixed positioning with layout constraints */}
       {isActive && (
         <div
-          className="fixed top-20 animate-in slide-in-from-left-4 duration-300 layout-transition"
+          className="fixed animate-in slide-in-from-left-4 duration-300 layout-transition"
           style={{
-            left: `${sidebarWidth}px`,
-            zIndex: 1050, // Higher than most sidebars
+            top: `${TOOLBOX_POSITIONING.top}px`,
+            bottom: `${TOOLBOX_POSITIONING.bottom}px`,
+            left: `${sidebarWidth + TOOLBOX_POSITIONING.padding}px`,
+            width: `${TOOLBOX_POSITIONING.width}px`,
+            zIndex: 9998, // Higher z-index to ensure visibility
             transition:
               "left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
             willChange: "left, transform"
           }}
         >
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-3 max-w-xs border border-gray-200/50">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">
-                Distance Measurement
-              </h3>
+          <div className="bg-white rounded-xl shadow-2xl border-2 border-blue-200 h-full flex flex-col">
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center space-x-2">
+                <span className="text-blue-600">📏</span>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Distance Measurement
+                </h3>
+                {isActive && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 animate-pulse">
+                    <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                    Active
+                  </span>
+                )}
+              </div>
               <button
                 onClick={onToggle}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md ${
                   isActive
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    ? "bg-red-500 text-white hover:bg-red-600 hover:scale-105"
+                    : "bg-blue-500 text-white hover:bg-blue-600 hover:scale-105"
                 }`}
               >
                 {isActive ? "Stop" : "Start"}
               </button>
             </div>
 
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 toolbox-scrollbar">
             {isActive && (
-              <div className="text-xs text-blue-600 mb-3">
-                Click on the map to add measurement points
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-3">
+                <div className="text-xs text-blue-700 font-medium flex items-center">
+                  <span className="mr-1">📍</span>
+                  Click on the map to add measurement points
+                </div>
+                {points.length === 0 && (
+                  <div className="text-xs text-blue-600 mt-1 opacity-75">
+                    Start by clicking your first point on the map
+                  </div>
+                )}
+                {points.length === 1 && (
+                  <div className="text-xs text-blue-600 mt-1 opacity-75">
+                    Click your second point to measure distance
+                  </div>
+                )}
+                {points.length > 1 && (
+                  <div className="text-xs text-blue-600 mt-1 opacity-75">
+                    Continue adding points to extend your measurement
+                  </div>
+                )}
               </div>
             )}
 
-            <div className="flex items-center space-x-2 mb-3">
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value as "km" | "miles")}
-                className="text-xs border border-gray-300 rounded px-2 py-1"
-              >
-                <option value="km">Kilometers</option>
-                <option value="miles">Miles</option>
-              </select>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Unit</label>
+                <select
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value as "km" | "miles")}
+                  className="w-full text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="km">📏 Kilometers</option>
+                  <option value="miles">📏 Miles</option>
+                </select>
+              </div>
 
-              <label className="flex items-center space-x-1 text-xs">
-                <input
-                  type="checkbox"
-                  checked={showStreetView}
-                  onChange={(e) => setShowStreetView(e.target.checked)}
-                  className="w-3 h-3"
-                />
-                <span>Street View</span>
-              </label>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Features</label>
+                <label className="flex items-center space-x-2 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={showStreetView}
+                    onChange={(e) => setShowStreetView(e.target.checked)}
+                    className="w-3 h-3 text-blue-600 focus:ring-blue-500 focus:ring-1 rounded"
+                  />
+                  <span className="text-xs font-medium text-gray-700">📷 Street View</span>
+                </label>
+              </div>
             </div>
 
             <div className="mb-3">
@@ -488,15 +712,17 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                                   {index + 1}
                                 </span>
                                 {showStreetView && (
-                                  <a
-                                    href={getStreetViewUrl(point)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-500 hover:text-blue-700"
-                                    title="Street View"
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      openStreetView(point);
+                                    }}
+                                    className="text-blue-500 hover:text-blue-700 cursor-pointer p-1 rounded hover:bg-blue-50 transition-all"
+                                    title="Open Street View with Markings"
                                   >
-                                    📍
-                                  </a>
+                                    📷
+                                  </button>
                                 )}
                               </div>
                             </td>
@@ -519,35 +745,171 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
               )}
             </div>
 
-            <div className="flex space-x-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={removeLastPoint}
                 disabled={points.length === 0}
-                className="flex-1 px-2 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center px-3 py-2 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-md hover:scale-105 disabled:hover:scale-100"
+                title={`Remove last point${points.length > 0 ? ` (${points.length})` : ''}`}
               >
-                Undo
+                <span className="mr-1">↩️</span>
+                Undo Last
               </button>
               <button
                 onClick={clearPoints}
                 disabled={points.length === 0}
-                className="flex-1 px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center px-3 py-2 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-md hover:scale-105 disabled:hover:scale-100"
+                title={`Clear all points${points.length > 0 ? ` (${points.length})` : ''}`}
               >
-                Clear
+                <span className="mr-1">🗑️</span>
+                Clear All
               </button>
+            </div>
+
+            {/* Save/Load Buttons */}
+            <div className="flex space-x-2 mt-2">
+              {points.length > 1 && (
+                <button
+                  onClick={() => setShowSaveDialog(true)}
+                  className="flex-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  Save
+                </button>
+              )}
+              {savedMeasurements.length > 0 && (
+                <button
+                  onClick={() => setShowSavedTable(!showSavedTable)}
+                  className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
+                    showSavedTable
+                      ? 'bg-purple-600 text-white hover:bg-purple-700'
+                      : 'bg-purple-500 text-white hover:bg-purple-600'
+                  }`}
+                >
+                  {showSavedTable ? 'Hide Saved' : 'View Saved'} ({savedMeasurements.length})
+                </button>
+              )}
             </div>
 
             {points.length > 0 && (
               <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="text-xs text-gray-600 mb-1">
-                  Points: {points.length}
-                </div>
-                {points.length > 1 && (
-                  <div className="text-sm font-bold text-blue-600">
-                    Total Distance: {cumulativeDistance.toFixed(2)} {unit}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-gray-700 flex items-center">
+                      <span className="mr-1">📍</span>
+                      Points: {points.length}
+                    </span>
+                    {points.length > 1 && (
+                      <span className="text-xs font-medium text-gray-700 flex items-center">
+                        <span className="mr-1">📏</span>
+                        Segments: {points.length - 1}
+                      </span>
+                    )}
                   </div>
-                )}
+                  {points.length > 1 && (
+                    <div className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                      {cumulativeDistance.toFixed(2)} {unit}
+                    </div>
+                  )}
+                  {points.length === 1 && (
+                    <div className="text-sm text-gray-500 italic">
+                      Add another point to measure distance
+                    </div>
+                  )}
+                </div>
               </div>
             )}
+
+            {/* Saved Measurements */}
+            {savedMeasurements.length > 0 && showSavedTable && (
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between w-full text-xs text-gray-700 font-bold mb-3">
+                  <span className="flex items-center">
+                    <span className="mr-1">📏</span>
+                    <span>Saved Measurements ({savedMeasurements.length})</span>
+                  </span>
+                  <button
+                    onClick={() => setShowSavedTable(false)}
+                    className="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-all"
+                    title="Hide saved measurements"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto border border-gray-200">
+                  <div className="space-y-2">
+                    {savedMeasurements.map((measurement) => (
+                      <div
+                        key={measurement.id}
+                        className={`bg-white rounded-lg border-2 p-3 transition-all hover:shadow-md ${
+                          selectedMeasurementId === measurement.id
+                            ? "border-blue-400 shadow-sm bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <button
+                            onClick={() => loadMeasurement(measurement)}
+                            className="flex-1 text-left hover:bg-gray-50 p-1 rounded transition-colors"
+                          >
+                            <span className="font-semibold text-xs truncate block text-gray-900" title={measurement.name}>
+                              {measurement.name}
+                            </span>
+                            <div className="text-xs text-gray-600 mt-1 flex items-center space-x-2">
+                              <span className="font-medium">{measurement.totalDistance.toFixed(2)} {measurement.unit}</span>
+                              <span>•</span>
+                              <span>{measurement.points.length} points</span>
+                            </div>
+                          </button>
+                          <div className="flex space-x-1 ml-2">
+                            <button
+                              onClick={() => editMeasurement(measurement)}
+                              className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all"
+                              title="Edit measurement"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => showDeleteConfirmation(measurement.id)}
+                              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
+                              title="Delete measurement"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+
+                        {selectedMeasurementId === measurement.id && (
+                          <div className="mt-3 pt-2 border-t border-blue-200 bg-blue-25">
+                            <div className="text-xs text-gray-700 space-y-1">
+                              <div className="flex justify-between">
+                                <span className="font-medium">Distance:</span>
+                                <span className="text-blue-700 font-semibold">{measurement.totalDistance.toFixed(2)} {measurement.unit}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">Points:</span>
+                                <span className="text-gray-900">{measurement.points.length}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">Created:</span>
+                                <span className="text-gray-900">{measurement.createdAt.toLocaleDateString()}</span>
+                              </div>
+                              {measurement.notes && (
+                                <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+                                  <span className="font-medium text-yellow-800">Notes:</span>
+                                  <div className="text-yellow-700 italic mt-1">{measurement.notes}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            </div>
           </div>
         </div>
       )}
@@ -564,14 +926,22 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
             <div key={point.id}>
               {/* Point marker */}
               <div
-                className="absolute w-3 h-3 bg-red-500 border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2"
+                className={`absolute w-4 h-4 border-3 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-125 ${
+                  index === 0 ? 'bg-green-500' :
+                  index === points.length - 1 ? 'bg-red-500' :
+                  'bg-blue-500'
+                }`}
                 style={{
                   left: point.x,
                   top: point.y
                 }}
               >
-                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-red-700 bg-white px-1 rounded shadow">
-                  {index + 1}
+                <div className={`absolute -top-7 left-1/2 transform -translate-x-1/2 text-xs font-bold px-1.5 py-0.5 rounded shadow-md ${
+                  index === 0 ? 'text-green-700 bg-green-100' :
+                  index === points.length - 1 ? 'text-red-700 bg-red-100' :
+                  'text-blue-700 bg-blue-100'
+                }`}>
+                  {index === 0 ? 'START' : index === points.length - 1 ? 'END' : index + 1}
                 </div>
               </div>
 
@@ -586,9 +956,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                     y1={point.y}
                     x2={points[index + 1].x}
                     y2={points[index + 1].y}
-                    stroke="#ef4444"
-                    strokeWidth="2"
-                    strokeDasharray="5,5"
+                    stroke="#F59E0B"
+                    strokeWidth="3"
+                    strokeDasharray="8,4"
                   />
 
                   {/* Distance label */}
@@ -612,26 +982,6 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                 </svg>
               )}
 
-              {/* Street View link */}
-              {showStreetView && (
-                <div
-                  className="absolute transform translate-x-2 -translate-y-1/2"
-                  style={{
-                    left: point.x,
-                    top: point.y
-                  }}
-                >
-                  <a
-                    href={getStreetViewUrl(point)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block w-4 h-4 bg-blue-500 text-white text-xs leading-4 text-center rounded hover:bg-blue-600"
-                    title="Open Street View"
-                  >
-                    📷
-                  </a>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -648,14 +998,22 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
             <div key={point.id}>
               {/* Point marker */}
               <div
-                className="absolute w-3 h-3 bg-red-500 border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2"
+                className={`absolute w-4 h-4 border-3 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-125 ${
+                  index === 0 ? 'bg-green-500' :
+                  index === points.length - 1 ? 'bg-red-500' :
+                  'bg-blue-500'
+                }`}
                 style={{
                   left: point.x,
                   top: point.y
                 }}
               >
-                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-red-700 bg-white px-1 rounded shadow">
-                  {index + 1}
+                <div className={`absolute -top-7 left-1/2 transform -translate-x-1/2 text-xs font-bold px-1.5 py-0.5 rounded shadow-md ${
+                  index === 0 ? 'text-green-700 bg-green-100' :
+                  index === points.length - 1 ? 'text-red-700 bg-red-100' :
+                  'text-blue-700 bg-blue-100'
+                }`}>
+                  {index === 0 ? 'START' : index === points.length - 1 ? 'END' : index + 1}
                 </div>
               </div>
               {/* Line to next point */}
@@ -669,9 +1027,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                     y1={point.y}
                     x2={points[index + 1].x}
                     y2={points[index + 1].y}
-                    stroke="#ef4444"
-                    strokeWidth="2"
-                    strokeDasharray="5,5"
+                    stroke="#F59E0B"
+                    strokeWidth="3"
+                    strokeDasharray="8,4"
                   />
                   {/* Distance label */}
                   <text
@@ -694,31 +1052,149 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                 </svg>
               )}
 
-              {/* Street View link */}
-              {showStreetView && (
-                <div
-                  className="absolute transform translate-x-2 -translate-y-1/2"
-                  style={{
-                    left: point.x,
-                    top: point.y,
-                    pointerEvents: "auto"
-                  }}
-                >
-                  <a
-                    href={getStreetViewUrl(point)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block w-4 h-4 bg-blue-500 text-white text-xs leading-4 text-center rounded hover:bg-blue-600"
-                    title="Open Street View"
-                  >
-                    📷
-                  </a>
-                </div>
-              )}
             </div>
           ))}
         </div>
       )}
+
+      {/* Overlay for multi-tool click handling */}
+      {isActive && (
+        <div
+          className="absolute inset-0 cursor-crosshair"
+          style={{
+            zIndex: Z_INDEX.MAP_OVERLAY,
+            pointerEvents: (isPrimaryTool || !multiToolMode) ? 'auto' : 'none'
+          }}
+          onClick={(event: React.MouseEvent<HTMLDivElement>) => {
+            if (!isActive) return;
+
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const { lat, lng } = pixelToLatLng(x, y);
+
+            const newPoint: Point = {
+              id: `point-${Date.now()}`,
+              lat,
+              lng,
+              x,
+              y
+            };
+
+            setPoints(prev => [...prev, newPoint]);
+          }}
+        />
+      )}
+
+      {/* Save Dialog */}
+      <StandardDialog
+        isOpen={showSaveDialog}
+        onClose={() => {
+          setShowSaveDialog(false);
+          setMeasurementName("");
+          setMeasurementNotes("");
+          setEditingMeasurementId(null);
+        }}
+        title={`${editingMeasurementId ? "Edit" : "Save"} Distance Measurement`}
+        size="md"
+      >
+        <div className="p-6 bg-white">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Measurement Name
+              </label>
+              <input
+                type="text"
+                value={measurementName}
+                onChange={(e) => setMeasurementName(e.target.value)}
+                placeholder="Enter measurement name"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
+                Notes (Optional)
+              </label>
+              <textarea
+                value={measurementNotes}
+                onChange={(e) => setMeasurementNotes(e.target.value)}
+                placeholder="Add description or notes"
+                rows={3}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white resize-none"
+              />
+            </div>
+
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <h4 className="text-sm font-semibold text-blue-900 mb-3">Measurement Summary</h4>
+              <div className="text-sm text-blue-800 space-y-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">Points:</span>
+                  <span className="text-blue-900 font-semibold">{points.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Distance:</span>
+                  <span className="text-blue-900 font-semibold">{cumulativeDistance.toFixed(2)} {unit}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Unit:</span>
+                  <span className="text-blue-900 font-semibold">{unit === "km" ? "Kilometers" : "Miles"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-3 mt-6 pt-4 border-t border-gray-200">
+            <button
+              onClick={() => {
+                setShowSaveDialog(false);
+                setMeasurementName("");
+                setMeasurementNotes("");
+                setEditingMeasurementId(null);
+              }}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveMeasurement}
+              disabled={!measurementName.trim()}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              {editingMeasurementId ? "Update" : "Save"} Measurement
+            </button>
+          </div>
+        </div>
+      </StandardDialog>
+
+      {/* Street View Modal */}
+      {streetViewCenterPoint && (
+        <StreetViewWithMarkings
+          isOpen={showStreetViewModal}
+          onClose={() => setShowStreetViewModal(false)}
+          centerPoint={streetViewCenterPoint}
+          points={points}
+          lines={generateLinesForStreetView}
+          title="Distance Measurement - Street View"
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDeletingMeasurementId(null);
+        }}
+        onConfirm={deleteMeasurement}
+        title="Delete Measurement"
+        message={`Are you sure you want to delete the measurement "${deletingMeasurementId ? savedMeasurements.find(m => m.id === deletingMeasurementId)?.name || 'Unknown' : 'Unknown'}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+      />
     </>
   );
 };

@@ -220,7 +220,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
   }, [userFilter]);
 
   const handleBulkAction = useCallback((action: BulkUserAction) => {
-    console.log('Bulk action:', action);
+    // Handle bulk action in real implementation
     setSelectedUsers([]);
     setShowBulkActions(false);
   }, []);

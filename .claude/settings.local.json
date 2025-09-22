@@ -29,7 +29,20 @@
       "Bash(set PORT=3006)",
       "Bash(tasklist:*)",
       "Bash(cat:*)",
-      "Bash(set PORT=3007)"
+      "Bash(set PORT=3007)",
+      "Bash(set PORT=3008)",
+      "Bash(tree:*)",
+      "Bash(npm audit:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx:*)",
+      "Bash(start http://localhost:3001)",
+      "Bash(/dev/null)",
+      "Bash(PORT=3005 npm start)",
+      "Bash(PORT=3006 npm start)",
+      "Bash(grep:*)",
+      "Bash(for file in src/components/map/DistanceMeasurementTool.tsx src/components/map/ElevationTool.tsx src/components/map/PolygonDrawingTool.tsx)",
+      "Bash(do sed -i 's/isPrimaryTool [^|]*||[^|]* !multiToolMode/isPrimaryTool || !multiToolMode/g' \"$file\")",
+      "Bash(PORT=3009 npm start)"
     ],
     "deny": [],
     "ask": []

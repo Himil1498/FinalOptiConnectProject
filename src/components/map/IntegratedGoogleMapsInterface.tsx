@@ -11,6 +11,7 @@ import DataImportSystem from '../admin/DataImportSystem';
 import InfrastructureDataManagement from '../admin/InfrastructureDataManagement';
 import ComprehensiveSearchSystem from '../search/ComprehensiveSearchSystem';
 import DataManager from '../data/DataManager';
+import Footer from '../common/Footer';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { useDataManager } from '../../hooks/useDataManager';
@@ -34,6 +35,7 @@ export const IntegratedGoogleMapsInterface: React.FC = () => {
 
   // Tool states
   const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [isFooterCollapsed, setIsFooterCollapsed] = useState(false);
   const [isDistanceMeasuring, setIsDistanceMeasuring] = useState(false);
   const [isPolygonDrawing, setIsPolygonDrawing] = useState(false);
   const [isElevationActive, setIsElevationActive] = useState(false);
@@ -108,7 +110,7 @@ export const IntegratedGoogleMapsInterface: React.FC = () => {
   }, [isDistanceMeasuring, isPolygonDrawing, isElevationActive, addNotification]);
 
   const handleToolComplete = useCallback((toolType: string, data: any) => {
-    console.log(`${toolType} tool completed with data:`, data);
+    // Tool completed with data
 
     addNotification({
       type: 'success',
@@ -120,7 +122,7 @@ export const IntegratedGoogleMapsInterface: React.FC = () => {
 
   // Search system handlers
   const handleSearchResultSelect = useCallback((result: SearchResult) => {
-    console.log('Selected search result:', result);
+    // Handle selected search result
     addNotification({
       type: 'info',
       title: 'Location Selected',
@@ -130,7 +132,7 @@ export const IntegratedGoogleMapsInterface: React.FC = () => {
   }, [addNotification]);
 
   const handleNavigateToLocation = useCallback((coords: Coordinates) => {
-    console.log('Navigating to:', coords);
+    // Navigate to coordinates
     addNotification({
       type: 'success',
       title: 'Navigation',
@@ -371,7 +373,7 @@ export const IntegratedGoogleMapsInterface: React.FC = () => {
           isAdmin={isAdmin}
           currentUserId={user?.id || ''}
           onAssignmentChange={(assignments) => {
-            console.log('Region assignments updated:', assignments);
+            // Region assignments updated
           }}
         />
       )}
@@ -424,7 +426,7 @@ export const IntegratedGoogleMapsInterface: React.FC = () => {
         <DataManager
           onClose={() => setShowDataManager(false)}
           onItemLoad={(item: SavedDataItem) => {
-            console.log('Loading saved data:', item);
+            // Loading saved data
             addNotification({
               type: 'success',
               message: `Loaded ${item.name}`,
@@ -474,6 +476,12 @@ export const IntegratedGoogleMapsInterface: React.FC = () => {
           </div>
         </div>
       )}
+
+      <Footer
+        isMapView={true}
+        isCollapsed={isFooterCollapsed}
+        onToggleCollapse={() => setIsFooterCollapsed(!isFooterCollapsed)}
+      />
     </div>
   );
 };

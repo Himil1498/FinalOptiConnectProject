@@ -163,7 +163,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ mapInstance }) => {
                     searchValue={searchValue}
                     onSearchChange={setSearchValue}
                     onPlaceSelect={(place) => {
-                      console.log("Selected place:", place);
+                      // Handle selected place
                     }}
                     className="w-full"
                     onFocusChange={setIsSearchFocused}
@@ -550,7 +550,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ mapInstance }) => {
                 searchValue={searchValue}
                 onSearchChange={setSearchValue}
                 onPlaceSelect={(place) => {
-                  console.log("Selected place:", place);
+                  // Handle selected place
                   setIsMobileMenuOpen(false);
                 }}
                 className="w-full"

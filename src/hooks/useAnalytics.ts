@@ -453,10 +453,7 @@ export const useAnalytics = () => {
 
   const trackUserAction = useCallback((action: string, tool: string, metadata?: any) => {
     // Track user actions for analytics
-    console.log('Analytics: User action tracked', { action, tool, metadata, user: user?.id });
-
     // In a real implementation, this would send data to analytics service
-    // For now, we'll just log it
   }, [user?.id]);
 
   const getFilteredData = useCallback((filter: AnalyticsFilter) => {

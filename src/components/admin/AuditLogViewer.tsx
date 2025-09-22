@@ -4,7 +4,6 @@ import { useAuth } from '../../hooks/useAuth';
 import {
   DocumentTextIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   ArrowDownTrayIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,

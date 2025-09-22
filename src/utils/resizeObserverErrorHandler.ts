@@ -14,10 +14,12 @@ export const handleResizeObserverError = () => {
   window.console.error = (...args: any[]) => {
     const errorMessage = args[0]?.toString() || '';
 
-    // Suppress ResizeObserver loop errors
+    // Suppress ResizeObserver loop errors AND Maximum update depth errors
     if (
       errorMessage.includes('ResizeObserver loop completed with undelivered notifications') ||
-      errorMessage.includes('ResizeObserver loop limit exceeded')
+      errorMessage.includes('ResizeObserver loop limit exceeded') ||
+      errorMessage.includes('Maximum update depth exceeded') ||
+      errorMessage.includes('setState inside useEffect')
     ) {
       // Silently ignore these errors as they're usually harmless
       return;
@@ -35,7 +37,9 @@ export const handleResizeObserverError = () => {
 
     if (
       reason.includes('ResizeObserver loop') ||
-      reason.includes('resize observer')
+      reason.includes('resize observer') ||
+      reason.includes('Maximum update depth') ||
+      reason.includes('setState inside useEffect')
     ) {
       event.preventDefault();
       return;

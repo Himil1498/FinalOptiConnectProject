@@ -107,14 +107,13 @@ const WorkingMapFallback: React.FC = () => {
 
   // Search system handlers
   const handleSearchResultSelect = useCallback((result: SearchResult) => {
-    console.log('Selected search result:', result);
     // Here you would typically update the map state, show details, etc.
   }, []);
 
   const handleNavigateToLocation = useCallback((coords: Coordinates) => {
     setCoordinates(coords);
     setZoom(15); // Zoom in when navigating to a specific location
-    console.log('Navigating to:', coords);
+    // Navigate to coordinates
   }, []);
 
   const getActiveToolInfo = () => {
@@ -550,7 +549,7 @@ const WorkingMapFallback: React.FC = () => {
           isAdmin={isAdmin}
           currentUserId={user?.id || ''}
           onAssignmentChange={(assignments) => {
-            console.log('Region assignments updated:', assignments);
+            // Region assignments updated
           }}
         />
       )}
@@ -610,7 +609,7 @@ const WorkingMapFallback: React.FC = () => {
           onClose={() => setShowDataManager(false)}
           onItemLoad={(item: SavedDataItem) => {
             // Handle loading saved data based on type
-            console.log('Loading saved data:', item);
+            // Loading saved data
             addNotification({
               type: 'success',
               message: `Loaded ${item.name}`,

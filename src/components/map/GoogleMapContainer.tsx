@@ -3,14 +3,15 @@ import { Wrapper } from '@googlemaps/react-wrapper';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { setMapCenter, setMapZoom, setSelectedTower } from '../../store/slices/mapSlice';
-import GoogleMapControls from './GoogleMapControls';
+import { createCompatibleMarker } from '../../utils/markerUtils';
 
 interface GoogleMapProps {
   center: google.maps.LatLngLiteral;
   zoom: number;
+  onMapReady?: (map: google.maps.Map) => void;
 }
 
-const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom }) => {
+const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom, onMapReady }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const { towers, layers } = useSelector((state: RootState) => state.map);
@@ -89,18 +90,13 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom }) => {
 
   // Initialize Google Map (only once)
   useEffect(() => {
-    console.log('GoogleMap useEffect triggered');
-    console.log('mapRef.current:', mapRef.current);
-    console.log('googleMapRef.current:', googleMapRef.current);
-    console.log('center:', center, 'zoom:', zoom);
 
     if (mapRef.current && !googleMapRef.current) {
-      console.log('Creating new Google Map instance');
       try {
         googleMapRef.current = new google.maps.Map(mapRef.current, {
           center,
           zoom,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          mapTypeId: google.maps.MapTypeId.HYBRID,
           disableDefaultUI: true,
           streetViewControl: false,
           mapTypeControl: false,
@@ -108,11 +104,16 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom }) => {
           zoomControl: false,
         });
 
-        console.log('Google Map created successfully');
+        // Google Map created successfully
 
         // Add event listeners
         googleMapRef.current.addListener('center_changed', handleCenterChanged);
         googleMapRef.current.addListener('zoom_changed', handleZoomChanged);
+
+        // Call onMapReady callback if provided
+        if (onMapReady) {
+          onMapReady(googleMapRef.current);
+        }
 
         // Load India boundary GeoJSON
         loadIndiaBoundary();
@@ -120,7 +121,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom }) => {
         console.error('Error creating Google Map:', error);
       }
     } else {
-      console.log('Map already exists or container not ready');
+      // Map already exists or container not ready
     }
 
     // Cleanup timeouts on unmount
@@ -165,9 +166,9 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom }) => {
     const towersLayer = layers.find(layer => layer.id === 'towers');
     if (towersLayer?.visible) {
       towers.forEach(tower => {
-        const marker = new google.maps.Marker({
+        const marker = createCompatibleMarker({
           position: { lat: tower.position[0], lng: tower.position[1] },
-          map: googleMapRef.current,
+          map: googleMapRef.current!,
           title: tower.name,
           icon: {
             url: getTowerIcon(tower.type, tower.status),
@@ -256,16 +257,25 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom }) => {
   return (
     <div className="relative h-full w-full">
       <div ref={mapRef} className="h-full w-full" />
-      <GoogleMapControls map={googleMapRef.current} />
     </div>
   );
 };
 
-const GoogleMapContainer: React.FC = () => {
-  const { center, zoom } = useSelector((state: RootState) => state.map);
+interface GoogleMapContainerProps {
+  center?: [number, number];
+  zoom?: number;
+  onMapReady?: (map: google.maps.Map) => void;
+}
+
+const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({ center: propCenter, zoom: propZoom, onMapReady }) => {
+  const { center: reduxCenter, zoom: reduxZoom } = useSelector((state: RootState) => state.map);
+
+  // Use props if provided, otherwise fallback to Redux state
+  const center = propCenter || reduxCenter;
+  const zoom = propZoom || reduxZoom;
 
   const render = (status: any) => {
-    console.log('Google Maps status:', status);
+    // Google Maps status check
 
     if (status === 'LOADING') {
       return (
@@ -298,11 +308,12 @@ const GoogleMapContainer: React.FC = () => {
       );
     }
 
-    console.log('Rendering Google Map with center:', center, 'zoom:', zoom);
+    // Rendering Google Map
     return (
       <GoogleMap
         center={{ lat: center[0], lng: center[1] }}
         zoom={zoom}
+        onMapReady={onMapReady}
       />
     );
   };

@@ -4,7 +4,6 @@ import {
   InfrastructureCategory,
   InfrastructureFilter,
   InfrastructureExport,
-  AttributeDefinition,
   Coordinates,
   User
 } from '../../types';
@@ -310,7 +309,6 @@ const InfrastructureDataManagement: React.FC<InfrastructureDataManagementProps> 
 
   const handleSaveItem = useCallback(() => {
     // In real app, this would save to backend
-    console.log('Saving infrastructure item:', formData);
     setShowAddModal(false);
     setShowEditModal(false);
     setFormData({});
@@ -319,17 +317,17 @@ const InfrastructureDataManagement: React.FC<InfrastructureDataManagementProps> 
 
   const handleDeleteItem = useCallback((itemId: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
-      console.log('Deleting item:', itemId);
+      // In real app, this would delete from backend
     }
   }, []);
 
   const handleBulkAction = useCallback((action: string) => {
-    console.log(`Bulk action ${action} on items:`, selectedItems);
+    // In real app, this would perform bulk action on backend
     setSelectedItems([]);
   }, [selectedItems]);
 
   const handleExport = useCallback((exportConfig: Partial<InfrastructureExport>) => {
-    console.log('Exporting data:', exportConfig);
+    // In real app, this would export data
     setShowExportModal(false);
   }, []);
 
@@ -603,7 +601,7 @@ const InfrastructureDataManagement: React.FC<InfrastructureDataManagementProps> 
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
                               <button
-                                onClick={() => console.log('View on map:', item.coordinates)}
+                                onClick={() => {/* In real app, this would pan map to coordinates */}}
                                 className="text-blue-600 hover:text-blue-900"
                               >
                                 📍

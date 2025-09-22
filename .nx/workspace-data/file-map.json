@@ -1,0 +1,644 @@
+{
+  "version": "6.0",
+  "nxVersion": "21.5.3",
+  "pathMappings": {},
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "projectFileMap": {},
+    "nonProjectFiles": [
+      {
+        "file": ".claude/settings.local.json",
+        "hash": "3822179009601216511"
+      },
+      {
+        "file": ".env",
+        "hash": "16014057404616178753"
+      },
+      {
+        "file": ".env.example",
+        "hash": "14916331017922495397"
+      },
+      {
+        "file": ".gitignore",
+        "hash": "9486989687300664618"
+      },
+      {
+        "file": "README.md",
+        "hash": "8065926065882056422"
+      },
+      {
+        "file": "docs/AUTHENTICATION.md",
+        "hash": "6490672685618120746"
+      },
+      {
+        "file": "docs/DEVELOPMENT_GUIDE.md",
+        "hash": "17397456841938499814"
+      },
+      {
+        "file": "docs/GOOGLE_MAPS_INTEGRATION.md",
+        "hash": "937370762141557720"
+      },
+      {
+        "file": "docs/MULTI_TOOL_SYSTEM.md",
+        "hash": "18294071119289791467"
+      },
+      {
+        "file": "docs/QUICK_START_GUIDE.md",
+        "hash": "3206730397143272716"
+      },
+      {
+        "file": "docs/README.md",
+        "hash": "16368928866080788232"
+      },
+      {
+        "file": "docs/STREET_VIEW_INTEGRATION.md",
+        "hash": "6260568255191254666"
+      },
+      {
+        "file": "docs/UI_UX_IMPROVEMENTS_2025.md",
+        "hash": "17843566574926832217"
+      },
+      {
+        "file": "package-lock.json",
+        "hash": "7046275565573853064"
+      },
+      {
+        "file": "package.json",
+        "hash": "6246096492749816106"
+      },
+      {
+        "file": "postcss.config.js",
+        "hash": "3548339186568216890"
+      },
+      {
+        "file": "public/favicon.ico",
+        "hash": "2949791817221603359"
+      },
+      {
+        "file": "public/favicon.svg",
+        "hash": "3176273957278541451"
+      },
+      {
+        "file": "public/index.html",
+        "hash": "11451388865647026578"
+      },
+      {
+        "file": "public/india-boundary.geojson",
+        "hash": "13607911077829363553"
+      },
+      {
+        "file": "public/india.json",
+        "hash": "15813881735834695059"
+      },
+      {
+        "file": "public/logo192.png",
+        "hash": "7585273181698778288"
+      },
+      {
+        "file": "public/logo512.png",
+        "hash": "9339365414554387981"
+      },
+      {
+        "file": "public/manifest.json",
+        "hash": "18148235521095288643"
+      },
+      {
+        "file": "public/pop_location.kml",
+        "hash": "9354816330066230785"
+      },
+      {
+        "file": "public/robots.txt",
+        "hash": "13952162886219042623"
+      },
+      {
+        "file": "public/sub_pop_location.kml",
+        "hash": "11532115801061081726"
+      },
+      {
+        "file": "src/App.css",
+        "hash": "16457583553712152214"
+      },
+      {
+        "file": "src/App.test.tsx",
+        "hash": "9515502254003067873"
+      },
+      {
+        "file": "src/App.tsx",
+        "hash": "4162261465728817608"
+      },
+      {
+        "file": "src/AppRouter.tsx",
+        "hash": "14375806269746620005"
+      },
+      {
+        "file": "src/components/admin/AuditLogViewer.tsx",
+        "hash": "15599978303330428406"
+      },
+      {
+        "file": "src/components/admin/BulkOperationsManager.tsx",
+        "hash": "10993350654834372210"
+      },
+      {
+        "file": "src/components/admin/DataImportSystem.tsx",
+        "hash": "11063585434746395314"
+      },
+      {
+        "file": "src/components/admin/InfrastructureDataManagement.tsx",
+        "hash": "7129595429667882815"
+      },
+      {
+        "file": "src/components/admin/ManagerDashboard.tsx",
+        "hash": "12976779725573828600"
+      },
+      {
+        "file": "src/components/admin/RegionAssignmentSystem.tsx",
+        "hash": "12824745264443721677"
+      },
+      {
+        "file": "src/components/admin/SystemConfigurationManager.tsx",
+        "hash": "15439295561506085802"
+      },
+      {
+        "file": "src/components/admin/SystemMaintenanceCenter.tsx",
+        "hash": "2269083097876028237"
+      },
+      {
+        "file": "src/components/admin/UserGroupsManagement.tsx",
+        "hash": "5859890958021880686"
+      },
+      {
+        "file": "src/components/analytics/AnalyticsDashboard.tsx",
+        "hash": "15019124168524551892"
+      },
+      {
+        "file": "src/components/analytics/DataAnalyticsPanel.tsx",
+        "hash": "12435760705661625159"
+      },
+      {
+        "file": "src/components/analytics/PerformanceMonitor.tsx",
+        "hash": "5092682357439737763"
+      },
+      {
+        "file": "src/components/analytics/ReportsPanel.tsx",
+        "hash": "1441342911561233078"
+      },
+      {
+        "file": "src/components/auth/EnhancedLoginForm.tsx",
+        "hash": "16626847077694878102"
+      },
+      {
+        "file": "src/components/auth/LoginForm.tsx",
+        "hash": "17093176284352557075"
+      },
+      {
+        "file": "src/components/common/AccessibilityEnhancements.tsx",
+        "hash": "16956872831609312723"
+      },
+      {
+        "file": "src/components/common/DraggablePanel.tsx",
+        "hash": "11586099033953865201"
+      },
+      {
+        "file": "src/components/common/EnhancedTooltip.tsx",
+        "hash": "17415582216377431235"
+      },
+      {
+        "file": "src/components/common/ErrorBoundary.tsx",
+        "hash": "12954068692311998941"
+      },
+      {
+        "file": "src/components/common/Footer.tsx",
+        "hash": "5585987153905207216"
+      },
+      {
+        "file": "src/components/common/FullscreenToggle.tsx",
+        "hash": "18260448465488983991"
+      },
+      {
+        "file": "src/components/common/GlobalErrorBoundary.tsx",
+        "hash": "14676705413915285170"
+      },
+      {
+        "file": "src/components/common/KeyboardShortcuts.tsx",
+        "hash": "2836827062877628580"
+      },
+      {
+        "file": "src/components/common/LayoutManager.tsx",
+        "hash": "5412666672591207342"
+      },
+      {
+        "file": "src/components/common/LoadingOverlay.tsx",
+        "hash": "5423301056229535338"
+      },
+      {
+        "file": "src/components/common/LoadingSpinner.tsx",
+        "hash": "5526747137820693022"
+      },
+      {
+        "file": "src/components/common/MapSearchBox.tsx",
+        "hash": "3786052923846732133"
+      },
+      {
+        "file": "src/components/common/ModalManager.tsx",
+        "hash": "18319598172149997905"
+      },
+      {
+        "file": "src/components/common/NavigationBar.tsx",
+        "hash": "14840979844607040114"
+      },
+      {
+        "file": "src/components/common/NotificationManager.tsx",
+        "hash": "13658928022066906083"
+      },
+      {
+        "file": "src/components/common/PanelManager.tsx",
+        "hash": "956676213808688630"
+      },
+      {
+        "file": "src/components/common/SimpleTooltip.tsx",
+        "hash": "283202162778259168"
+      },
+      {
+        "file": "src/components/common/StandardDialog.tsx",
+        "hash": "14609022890980656937"
+      },
+      {
+        "file": "src/components/common/ThemeProvider.tsx",
+        "hash": "3598049293663967478"
+      },
+      {
+        "file": "src/components/common/ThemeToggle.tsx",
+        "hash": "1144737125091123361"
+      },
+      {
+        "file": "src/components/common/ToastContainer.tsx",
+        "hash": "8398188956344102169"
+      },
+      {
+        "file": "src/components/common/ToolboxContainer.tsx",
+        "hash": "5518861084093496028"
+      },
+      {
+        "file": "src/components/common/ValidatedInput.tsx",
+        "hash": "13240854586147116205"
+      },
+      {
+        "file": "src/components/data/DataBrowser.tsx",
+        "hash": "8109524144111873956"
+      },
+      {
+        "file": "src/components/data/DataManager.tsx",
+        "hash": "1317079332764507736"
+      },
+      {
+        "file": "src/components/data/PermissionManager.tsx",
+        "hash": "16014423093660859312"
+      },
+      {
+        "file": "src/components/data/VersionHistory.tsx",
+        "hash": "882309910868822427"
+      },
+      {
+        "file": "src/components/debug/GoogleMapsDebug.tsx",
+        "hash": "13025593854600496181"
+      },
+      {
+        "file": "src/components/debug/MobileResponsivenessTest.tsx",
+        "hash": "10933613203531238160"
+      },
+      {
+        "file": "src/components/map/AdminPanelManager.tsx",
+        "hash": "13218598271006456769"
+      },
+      {
+        "file": "src/components/map/BaseMap.tsx",
+        "hash": "2388013720520242373"
+      },
+      {
+        "file": "src/components/map/BaseMapExample.tsx",
+        "hash": "18291974659607218737"
+      },
+      {
+        "file": "src/components/map/BaseMapProvider.tsx",
+        "hash": "5927408788969001959"
+      },
+      {
+        "file": "src/components/map/ComprehensiveGoogleMapInterface.tsx",
+        "hash": "17254418749420103143"
+      },
+      {
+        "file": "src/components/map/CoordinateDisplayWidget.tsx",
+        "hash": "18007414429039138208"
+      },
+      {
+        "file": "src/components/map/CustomMapControls.tsx",
+        "hash": "8076050123744375226"
+      },
+      {
+        "file": "src/components/map/DistanceMeasurementTool.tsx",
+        "hash": "10948249374651954488"
+      },
+      {
+        "file": "src/components/map/DrawingManager.tsx",
+        "hash": "2928826114796328404"
+      },
+      {
+        "file": "src/components/map/ElevationTool.tsx",
+        "hash": "10937529487518327063"
+      },
+      {
+        "file": "src/components/map/EnhancedGoogleMap.tsx",
+        "hash": "17293706228043612135"
+      },
+      {
+        "file": "src/components/map/FloatingToolPanel.tsx",
+        "hash": "17715137204766059325"
+      },
+      {
+        "file": "src/components/map/GeofencingSystem.tsx",
+        "hash": "9871598779517877324"
+      },
+      {
+        "file": "src/components/map/GoogleMapContainer.tsx",
+        "hash": "13805290670367093409"
+      },
+      {
+        "file": "src/components/map/GoogleMapControls.tsx",
+        "hash": "9686703488381109765"
+      },
+      {
+        "file": "src/components/map/GoogleMapsComponent.tsx",
+        "hash": "16370157185300767172"
+      },
+      {
+        "file": "src/components/map/IntegratedGoogleMapsInterface.tsx",
+        "hash": "15239322446545574017"
+      },
+      {
+        "file": "src/components/map/LiveCoordinateDisplay.tsx",
+        "hash": "7475754143919753826"
+      },
+      {
+        "file": "src/components/map/MapContainer.tsx",
+        "hash": "12239246033071420260"
+      },
+      {
+        "file": "src/components/map/MapControlPanel.tsx",
+        "hash": "8541926120189160437"
+      },
+      {
+        "file": "src/components/map/MapControlsPanel.tsx",
+        "hash": "7999193967886752311"
+      },
+      {
+        "file": "src/components/map/MapDataOverlay.tsx",
+        "hash": "17898484776234309785"
+      },
+      {
+        "file": "src/components/map/MapStatusIndicator.tsx",
+        "hash": "13566970488704976013"
+      },
+      {
+        "file": "src/components/map/MapToolsPanel.tsx",
+        "hash": "4473703905926068814"
+      },
+      {
+        "file": "src/components/map/MapTypeSelector.tsx",
+        "hash": "12808896785999548438"
+      },
+      {
+        "file": "src/components/map/MultiToolManager.tsx",
+        "hash": "2676653665681405752"
+      },
+      {
+        "file": "src/components/map/PolygonDrawingTool.tsx",
+        "hash": "10462389285288677595"
+      },
+      {
+        "file": "src/components/map/SimpleMapFallback.tsx",
+        "hash": "10494283778783451584"
+      },
+      {
+        "file": "src/components/map/SimpleMapTest.tsx",
+        "hash": "9636676900569346909"
+      },
+      {
+        "file": "src/components/map/StreetViewWithMarkings.tsx",
+        "hash": "9024934151581510246"
+      },
+      {
+        "file": "src/components/map/WorkflowManager.tsx",
+        "hash": "6636040701658712679"
+      },
+      {
+        "file": "src/components/map/WorkingMapFallback.tsx",
+        "hash": "6633290067487342157"
+      },
+      {
+        "file": "src/components/map/hooks/useMapEventHandlers.ts",
+        "hash": "7643664483574291468"
+      },
+      {
+        "file": "src/components/map/types/MapInterfaces.ts",
+        "hash": "11995153136079833632"
+      },
+      {
+        "file": "src/components/search/ComprehensiveSearchSystem.tsx",
+        "hash": "3993158799010635410"
+      },
+      {
+        "file": "src/components/users/UserList.tsx",
+        "hash": "9554453880747939198"
+      },
+      {
+        "file": "src/components/workflow/WorkflowPresets.tsx",
+        "hash": "8710467758592403789"
+      },
+      {
+        "file": "src/constants/zIndex.ts",
+        "hash": "6838420089575529676"
+      },
+      {
+        "file": "src/data/sampleTowers.ts",
+        "hash": "16813905397259474516"
+      },
+      {
+        "file": "src/hooks/useAnalytics.ts",
+        "hash": "7258805222585601724"
+      },
+      {
+        "file": "src/hooks/useAuth.ts",
+        "hash": "18421777770494561584"
+      },
+      {
+        "file": "src/hooks/useBaseMap.ts",
+        "hash": "15905293173665377133"
+      },
+      {
+        "file": "src/hooks/useDataManager.ts",
+        "hash": "4086567997279846565"
+      },
+      {
+        "file": "src/hooks/useFullscreen.ts",
+        "hash": "15501865035030649849"
+      },
+      {
+        "file": "src/hooks/useGoogleMaps.ts",
+        "hash": "283536340441704852"
+      },
+      {
+        "file": "src/hooks/useLayoutDimensions.ts",
+        "hash": "4498792785994509508"
+      },
+      {
+        "file": "src/hooks/useStackedToolboxPositioning.ts",
+        "hash": "4903210327505493108"
+      },
+      {
+        "file": "src/hooks/useTheme.ts",
+        "hash": "5018414662785875460"
+      },
+      {
+        "file": "src/index.css",
+        "hash": "1998698843422333923"
+      },
+      {
+        "file": "src/index.tsx",
+        "hash": "4118614111605261117"
+      },
+      {
+        "file": "src/logo.svg",
+        "hash": "5137778160416929466"
+      },
+      {
+        "file": "src/pages/AdminPage.tsx",
+        "hash": "9017202603843491673"
+      },
+      {
+        "file": "src/pages/AnalyticsPage.tsx",
+        "hash": "18200092116040991658"
+      },
+      {
+        "file": "src/pages/BaseMapPage.tsx",
+        "hash": "17757910002264123053"
+      },
+      {
+        "file": "src/pages/Dashboard.tsx",
+        "hash": "10715974527333303662"
+      },
+      {
+        "file": "src/pages/Users.tsx",
+        "hash": "13874001262918941528"
+      },
+      {
+        "file": "src/react-app-env.d.ts",
+        "hash": "4668673524524593686"
+      },
+      {
+        "file": "src/reportWebVitals.ts",
+        "hash": "10503513403266688488"
+      },
+      {
+        "file": "src/setupTests.ts",
+        "hash": "56515321623462775"
+      },
+      {
+        "file": "src/store/index.ts",
+        "hash": "5725645951028708061"
+      },
+      {
+        "file": "src/store/slices/authSlice.ts",
+        "hash": "17234241546131520726"
+      },
+      {
+        "file": "src/store/slices/mapSlice.ts",
+        "hash": "13463286848813918287"
+      },
+      {
+        "file": "src/store/slices/userSlice.ts",
+        "hash": "14354783119032933960"
+      },
+      {
+        "file": "src/styles/data-browser.css",
+        "hash": "1817503147320459811"
+      },
+      {
+        "file": "src/styles/data-manager.css",
+        "hash": "17171510536279843327"
+      },
+      {
+        "file": "src/styles/fullscreen.css",
+        "hash": "5091733920677753510"
+      },
+      {
+        "file": "src/styles/globals.css",
+        "hash": "16571052987824891742"
+      },
+      {
+        "file": "src/styles/layout.css",
+        "hash": "1404346215757210493"
+      },
+      {
+        "file": "src/styles/mobile.css",
+        "hash": "18031179349123294950"
+      },
+      {
+        "file": "src/styles/permission-manager.css",
+        "hash": "17676676042209859010"
+      },
+      {
+        "file": "src/styles/theme.css",
+        "hash": "16599469119544266002"
+      },
+      {
+        "file": "src/styles/version-history.css",
+        "hash": "3078647687324967411"
+      },
+      {
+        "file": "src/types/index.ts",
+        "hash": "18007484323756635699"
+      },
+      {
+        "file": "src/utils/analyticsPermissions.ts",
+        "hash": "18376709637774961596"
+      },
+      {
+        "file": "src/utils/formValidation.ts",
+        "hash": "5435822800521811723"
+      },
+      {
+        "file": "src/utils/indiaGeofencing.ts",
+        "hash": "16140352179758228752"
+      },
+      {
+        "file": "src/utils/lightThemeHelper.ts",
+        "hash": "15275036198431498004"
+      },
+      {
+        "file": "src/utils/mapRestrictions.ts",
+        "hash": "12358093844809877550"
+      },
+      {
+        "file": "src/utils/markerUtils.ts",
+        "hash": "1141021489327592858"
+      },
+      {
+        "file": "src/utils/preciseIndiaGeofencing.ts",
+        "hash": "7068312507107266569"
+      },
+      {
+        "file": "src/utils/resizeObserverErrorHandler.ts",
+        "hash": "12183665252183759017"
+      },
+      {
+        "file": "tailwind.config.js",
+        "hash": "14726382544142381832"
+      },
+      {
+        "file": "tsconfig.json",
+        "hash": "13863284611545056558"
+      }
+    ]
+  },
+  "externalNodesHash": "5803654204770578359"
+}

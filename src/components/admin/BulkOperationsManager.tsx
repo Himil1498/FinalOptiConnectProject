@@ -9,7 +9,6 @@ import {
   UsersIcon,
   UserGroupIcon,
   PlayIcon,
-  PauseIcon,
   StopIcon,
   XMarkIcon,
   CheckCircleIcon,

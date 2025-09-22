@@ -1,7 +1,31 @@
-/* Data Manager Styles */
+/* Data Manager Styles - Force Light Theme */
 @import url('./data-browser.css');
 @import url('./permission-manager.css');
 @import url('./version-history.css');
+
+/* Force light theme for Data Manager */
+.data-manager-overlay,
+.data-manager-overlay *,
+.data-manager,
+.data-manager * {
+  --color-background: #ffffff !important;
+  --color-surface: #f8fafc !important;
+  --color-border: #e2e8f0 !important;
+  --color-text: #1e293b !important;
+  --color-textSecondary: #64748b !important;
+  --color-primary: #3b82f6 !important;
+  --color-accent: #10b981 !important;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+  --spacing-xs: 0.25rem !important;
+  --spacing-sm: 0.5rem !important;
+  --spacing-md: 1rem !important;
+  --spacing-lg: 1.5rem !important;
+  --radius-sm: 0.25rem !important;
+  --radius-md: 0.5rem !important;
+  --radius-lg: 0.75rem !important;
+  --animation-duration: 0.2s !important;
+}
 
 .data-manager-overlay {
   position: fixed;

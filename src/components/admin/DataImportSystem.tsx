@@ -4,10 +4,7 @@ import {
   ImportJob,
   ImportSettings,
   FieldMapping,
-  ImportTemplate,
-  GeospatialData,
-  ImportError,
-  ImportWarning
+  ImportTemplate
 } from '../../types';
 
 interface DataImportSystemProps {

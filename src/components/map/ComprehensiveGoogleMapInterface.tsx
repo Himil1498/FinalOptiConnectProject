@@ -1,397 +1,68 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Wrapper } from "@googlemaps/react-wrapper";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState, AppDispatch } from "../../store";
-import {
-  setMapCenter,
-  setMapZoom,
-  setSelectedTower
-} from "../../store/slices/mapSlice";
-import CustomMapControls from "./CustomMapControls";
-import GoogleMapControls from "./GoogleMapControls";
-import FloatingToolPanel from "./FloatingToolPanel";
-import MapControlsPanel from "./MapControlsPanel";
-import LiveCoordinateDisplay from "./LiveCoordinateDisplay";
-import DraggablePanel from "../common/DraggablePanel";
-import LayoutManager from "../common/LayoutManager";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
 import { usePanelManager } from "../common/PanelManager";
+import { useGeofencing } from "./GeofencingSystem";
+import { WorkflowPreset } from "../workflow/WorkflowPresets";
+import { useAuth } from "../../hooks/useAuth";
+import { useTheme } from "../../hooks/useTheme";
+import { SearchResult, Coordinates, SavedDataItem } from "../../types";
+
+// Import refactored components
+import MapContainer from "./MapContainer";
+import MapToolsPanel from "./MapToolsPanel";
+import MapStatusIndicator from "./MapStatusIndicator";
+import MapDataOverlay from "./MapDataOverlay";
+import AdminPanelManager from "./AdminPanelManager";
+import WorkflowManager from "./WorkflowManager";
+
+// Import map components
+import GoogleMapContainer from "./GoogleMapContainer";
+import LiveCoordinateDisplay from "./LiveCoordinateDisplay";
+import MapControlsPanel from "./MapControlsPanel";
+import FloatingToolPanel from "./FloatingToolPanel";
+import MultiToolManager from "./MultiToolManager";
 import DistanceMeasurementTool from "./DistanceMeasurementTool";
+// import DistanceMeasurementToolV2 from "./DistanceMeasurementToolV2";
+// import SimpleDistanceTool from "./SimpleDistanceTool";
+// import UltraSimpleDistanceTool from "./UltraSimpleDistanceTool";
 import PolygonDrawingTool from "./PolygonDrawingTool";
 import ElevationTool from "./ElevationTool";
-import GeofencingSystem, { useGeofencing } from "./GeofencingSystem";
+import GeofencingSystem from "./GeofencingSystem";
+// import DistanceToolDebugger from "./DistanceToolDebugger";
+
+// Import admin components
 import RegionAssignmentSystem from "../admin/RegionAssignmentSystem";
 import UserGroupsManagement from "../admin/UserGroupsManagement";
 import ManagerDashboard from "../admin/ManagerDashboard";
 import DataImportSystem from "../admin/DataImportSystem";
 import InfrastructureDataManagement from "../admin/InfrastructureDataManagement";
+
+// Import search and data components
 import ComprehensiveSearchSystem from "../search/ComprehensiveSearchSystem";
 import DataManager from "../data/DataManager";
-import { useAuth } from "../../hooks/useAuth";
-import { useTheme } from "../../hooks/useTheme";
-import { SearchResult, Coordinates, SavedDataItem } from "../../types";
 
-interface GoogleMapProps {
-  center: google.maps.LatLngLiteral;
-  zoom: number;
-  onMapReady?: (map: google.maps.Map) => void;
-}
+// Import common components
+import LayoutManager from "../common/LayoutManager";
+import KeyboardShortcuts from "../common/KeyboardShortcuts";
 
-const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom, onMapReady }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const googleMapRef = useRef<google.maps.Map | null>(null);
-  const { towers, layers } = useSelector((state: RootState) => state.map);
-  const dispatch = useDispatch<AppDispatch>();
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const boundaryRef = useRef<google.maps.Data | null>(null);
+// Import workflow components
+import WorkflowPresets from "../workflow/WorkflowPresets";
 
-  // Debounce refs for preventing excessive updates
-  const centerUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const zoomUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+// Import custom hooks
+import {
+  useMapEventHandlers,
+  useWorkflowHandlers,
+  usePanelHandlers
+} from "./hooks/useMapEventHandlers";
 
-  // Performance optimization refs
-  const isDraggingRef = useRef(false);
-  const animationFrameRef = useRef<number | null>(null);
+// Import types
+import { ComprehensiveGoogleMapInterfaceProps } from "./types/MapInterfaces";
 
-  // Load India boundary from GeoJSON file
-  const loadIndiaBoundary = useCallback(async () => {
-    if (!googleMapRef.current) return;
-
-    try {
-      const response = await fetch("/india-boundary.geojson");
-      const geoJsonData = await response.json();
-
-      // Add data layer for boundaries
-      const dataLayer = new google.maps.Data();
-      dataLayer.addGeoJson(geoJsonData);
-
-      // Style the boundary
-      dataLayer.setStyle({
-        strokeColor: "#2563eb",
-        strokeWeight: 2,
-        strokeOpacity: 0.8,
-        fillColor: "transparent",
-        fillOpacity: 0,
-        clickable: false
-      });
-
-      dataLayer.setMap(googleMapRef.current);
-      boundaryRef.current = dataLayer;
-    } catch (error) {
-      console.error("Error loading India boundary:", error);
-    }
-  }, []);
-
-  const getStatusColor = useCallback((status: string): string => {
-    switch (status) {
-      case "active":
-        return "#10B981";
-      case "inactive":
-        return "#6B7280";
-      case "maintenance":
-        return "#F59E0B";
-      case "critical":
-        return "#EF4444";
-      default:
-        return "#6B7280";
-    }
-  }, []);
-
-  const getTowerIcon = (type: string, status: string): string => {
-    // You can customize these icon URLs based on your assets
-    const baseUrl = "/icons/";
-    const statusColor =
-      status === "active"
-        ? "green"
-        : status === "maintenance"
-        ? "yellow"
-        : status === "critical"
-        ? "red"
-        : "gray";
-
-    return `${baseUrl}tower-${type}-${statusColor}.png`;
-  };
-
-  const createInfoWindowContent = useCallback(
-    (tower: any): string => {
-      return `
-      <div style="padding: 10px; min-width: 200px;">
-        <h3 style="margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">${
-          tower.name
-        }</h3>
-        <div style="font-size: 14px; line-height: 1.4;">
-          <p><strong>Type:</strong> ${tower.type.toUpperCase()}</p>
-          <p><strong>Status:</strong> <span style="color: ${getStatusColor(
-            tower.status
-          )}">${
-        tower.status.charAt(0).toUpperCase() + tower.status.slice(1)
-      }</span></p>
-          <p><strong>Signal Strength:</strong> ${tower.signal_strength}%</p>
-          <p><strong>Coverage Radius:</strong> ${tower.coverage_radius}km</p>
-          <p><strong>Installed:</strong> ${new Date(
-            tower.installed_date
-          ).toLocaleDateString()}</p>
-          <p><strong>Last Maintenance:</strong> ${new Date(
-            tower.last_maintenance
-          ).toLocaleDateString()}</p>
-          <div style="margin-top: 8px;">
-            <strong>Equipment:</strong><br>
-            ${tower.equipment
-              .map(
-                (item: string) =>
-                  `<span style="display: inline-block; background: #e3f2fd; padding: 2px 6px; margin: 2px; border-radius: 3px; font-size: 12px;">${item}</span>`
-              )
-              .join("")}
-          </div>
-        </div>
-      </div>
-    `;
-    },
-    [getStatusColor]
-  );
-
-  // Optimized event handlers with better performance
-  const handleCenterChanged = useCallback(() => {
-    if (googleMapRef.current && !isDraggingRef.current) {
-      if (centerUpdateTimeoutRef.current) {
-        clearTimeout(centerUpdateTimeoutRef.current);
-      }
-
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-
-      animationFrameRef.current = requestAnimationFrame(() => {
-        centerUpdateTimeoutRef.current = setTimeout(() => {
-          if (googleMapRef.current) {
-            const newCenter = googleMapRef.current.getCenter();
-            if (newCenter) {
-              const lat = newCenter.lat();
-              const lng = newCenter.lng();
-              dispatch(setMapCenter([lat, lng]));
-            }
-          }
-        }, 50); // Further reduced debounce for smoother dragging
-      });
-    }
-  }, [dispatch]);
-
-  const handleZoomChanged = useCallback(() => {
-    if (googleMapRef.current) {
-      if (zoomUpdateTimeoutRef.current) {
-        clearTimeout(zoomUpdateTimeoutRef.current);
-      }
-
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-
-      animationFrameRef.current = requestAnimationFrame(() => {
-        zoomUpdateTimeoutRef.current = setTimeout(() => {
-          if (googleMapRef.current) {
-            const newZoom = googleMapRef.current.getZoom();
-            if (newZoom) {
-              dispatch(setMapZoom(newZoom));
-            }
-          }
-        }, 100); // Faster zoom response
-      });
-    }
-  }, [dispatch]);
-
-  // Add drag event handlers for better performance
-  const handleDragStart = useCallback(() => {
-    isDraggingRef.current = true;
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    isDraggingRef.current = false;
-    handleCenterChanged();
-  }, [handleCenterChanged]);
-
-  // Initialize Google Map (only once)
-  useEffect(() => {
-    if (mapRef.current && !googleMapRef.current) {
-      try {
-        googleMapRef.current = new google.maps.Map(mapRef.current, {
-          center,
-          zoom,
-          mapTypeId: google.maps.MapTypeId.HYBRID,
-          // Remove all default controls
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-          zoomControl: false,
-          scaleControl: false,
-          rotateControl: false,
-          panControl: false,
-          // Optimize performance with enhanced interactions
-          // Enhanced smooth animations and interactions
-          gestureHandling: "greedy",
-          scrollwheel: true,
-          draggable: true,
-          clickableIcons: true,
-          keyboardShortcuts: true,
-          // Enhanced zoom limits for better control
-          minZoom: 4,
-          maxZoom: 20,
-          // Smooth interaction settings
-          disableDoubleClickZoom: false,
-          draggableCursor: 'grab',
-          draggingCursor: 'grabbing',
-          // Custom styling for better performance
-          styles: [
-            {
-              featureType: "poi.business",
-              stylers: [{ visibility: "off" }]
-            },
-            {
-              featureType: "poi.government",
-              stylers: [{ visibility: "off" }]
-            },
-            {
-              featureType: "poi.school",
-              stylers: [{ visibility: "off" }]
-            }
-          ]
-        });
-
-        // Add event listeners with performance optimization
-        googleMapRef.current.addListener("center_changed", handleCenterChanged);
-        googleMapRef.current.addListener("zoom_changed", handleZoomChanged);
-        googleMapRef.current.addListener("dragstart", handleDragStart);
-        googleMapRef.current.addListener("dragend", handleDragEnd);
-
-        // Add idle event for better performance
-        googleMapRef.current.addListener("idle", () => {
-          // Map has finished moving
-          if (isDraggingRef.current) {
-            isDraggingRef.current = false;
-          }
-        });
-
-        // Load India boundary GeoJSON
-        loadIndiaBoundary();
-
-        // Notify parent component that map is ready
-        if (onMapReady) {
-          onMapReady(googleMapRef.current);
-        }
-      } catch (error) {
-        console.error("Error creating Google Map:", error);
-      }
-    }
-
-    // Cleanup timeouts and animation frames on unmount
-    return () => {
-      if (centerUpdateTimeoutRef.current) {
-        clearTimeout(centerUpdateTimeoutRef.current);
-      }
-      if (zoomUpdateTimeoutRef.current) {
-        clearTimeout(zoomUpdateTimeoutRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [center, zoom, handleCenterChanged, handleZoomChanged, loadIndiaBoundary]);
-
-  // Update map center and zoom when props change (but only if different)
-  useEffect(() => {
-    if (googleMapRef.current) {
-      const currentCenter = googleMapRef.current.getCenter();
-      const currentZoom = googleMapRef.current.getZoom();
-
-      // Only update if values are actually different to prevent infinite loops
-      if (
-        currentCenter &&
-        (Math.abs(currentCenter.lat() - center.lat) > 0.0001 ||
-          Math.abs(currentCenter.lng() - center.lng) > 0.0001)
-      ) {
-        // Smooth pan to new center
-        googleMapRef.current.panTo(center);
-      }
-
-      if (currentZoom !== zoom) {
-        // Smooth zoom to new level
-        googleMapRef.current.setZoom(zoom);
-      }
-    }
-  }, [center.lat, center.lng, zoom]);
-
-  // Update towers on map
-  useEffect(() => {
-    if (!googleMapRef.current) return;
-
-    // Clear existing markers
-    markersRef.current.forEach((marker) => marker.setMap(null));
-    markersRef.current = [];
-
-    // Add new markers for visible towers
-    const towersLayer = layers.find((layer) => layer.id === "towers");
-    if (towersLayer?.visible) {
-      towers.forEach((tower) => {
-        const marker = new google.maps.Marker({
-          position: { lat: tower.position[0], lng: tower.position[1] },
-          map: googleMapRef.current,
-          title: tower.name,
-          icon: {
-            url: getTowerIcon(tower.type, tower.status),
-            scaledSize: new google.maps.Size(32, 32),
-            anchor: new google.maps.Point(16, 32)
-          }
-        });
-
-        // Add info window
-        const infoWindow = new google.maps.InfoWindow({
-          content: createInfoWindowContent(tower)
-        });
-
-        marker.addListener("click", () => {
-          infoWindow.open(googleMapRef.current, marker);
-          dispatch(setSelectedTower(tower));
-        });
-
-        // Add coverage circle
-        if (layers.find((layer) => layer.id === "coverage")?.visible) {
-          new google.maps.Circle({
-            strokeColor: getStatusColor(tower.status),
-            strokeOpacity: 0.6,
-            strokeWeight: 2,
-            fillColor: getStatusColor(tower.status),
-            fillOpacity: 0.1,
-            map: googleMapRef.current,
-            center: { lat: tower.position[0], lng: tower.position[1] },
-            radius: tower.coverage_radius * 1000 // Convert km to meters
-          });
-        }
-
-        markersRef.current.push(marker);
-      });
-    }
-  }, [towers, layers, dispatch, createInfoWindowContent]);
-
-  // Toggle boundary visibility
-  useEffect(() => {
-    const boundariesLayer = layers.find((layer) => layer.id === "boundaries");
-    if (boundaryRef.current) {
-      boundaryRef.current.setMap(
-        boundariesLayer?.visible ? googleMapRef.current : null
-      );
-    }
-  }, [layers]);
-
-  return (
-    <div className="relative h-full w-full">
-      <div ref={mapRef} className="h-full w-full" />
-    </div>
-  );
-};
-
-interface ComprehensiveGoogleMapInterfaceProps {
-  onMapReady?: (map: google.maps.Map) => void;
-}
-
-const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceProps> = ({ onMapReady }) => {
+const ComprehensiveGoogleMapInterface: React.FC<
+  ComprehensiveGoogleMapInterfaceProps
+> = ({ onMapReady }) => {
   const { center, zoom } = useSelector((state: RootState) => state.map);
   const { user } = useAuth();
   const { addNotification } = useTheme();
@@ -400,6 +71,13 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
   const [isDistanceMeasuring, setIsDistanceMeasuring] = useState(false);
   const [isPolygonDrawing, setIsPolygonDrawing] = useState(false);
   const [isElevationActive, setIsElevationActive] = useState(false);
+  const [multiToolMode, setMultiToolMode] = useState(false);
+  const [distanceToolHasData, setDistanceToolHasData] = useState(false);
+  const [polygonToolHasData, setPolygonToolHasData] = useState(false);
+  const [elevationToolHasData, setElevationToolHasData] = useState(false);
+  const [activePrimaryTool, setActivePrimaryTool] = useState<string | null>(
+    null
+  );
 
   // Map control states
   const [currentMapType, setCurrentMapType] = useState<string>("hybrid");
@@ -414,13 +92,20 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
   const [showSearchSystem, setShowSearchSystem] = useState(false);
   const [showDataManager, setShowDataManager] = useState(false);
   const [showLayoutManager, setShowLayoutManager] = useState(false);
+  const [showWorkflowPresets, setShowWorkflowPresets] = useState(false);
+
+  // Workflow system states
+  const [activeWorkflow, setActiveWorkflow] = useState<WorkflowPreset | null>(
+    null
+  );
+  const [currentWorkflowStep, setCurrentWorkflowStep] = useState(0);
 
   // Panel manager hook
   const { registerPanel } = usePanelManager();
 
   // Register the live coordinates panel
   useEffect(() => {
-    registerPanel('live-coordinates', {
+    registerPanel("live-coordinates", {
       isVisible: true,
       position: { x: 20, y: 20 },
       zIndex: 60
@@ -438,15 +123,16 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
     isGeofencingActive
   );
 
-  // Tool handlers - Fixed synchronization
+  // Tool handlers - Enhanced for multi-tool support
   const handleToolActivation = useCallback(
     (toolName: string) => {
-      // Handle tool toggling properly
+      // Handle tool toggling with multi-tool support
       switch (toolName) {
         case "distance":
           if (isDistanceMeasuring) {
             // If already active, deactivate
             setIsDistanceMeasuring(false);
+            if (activePrimaryTool === "distance") setActivePrimaryTool(null);
             addNotification({
               type: "info",
               title: "Distance Tool Deactivated",
@@ -454,14 +140,19 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
               duration: 2000
             });
           } else {
-            // Deactivate other tools and activate distance
-            setIsPolygonDrawing(false);
-            setIsElevationActive(false);
+            // In multi-tool mode, don't deactivate other tools
+            if (!multiToolMode) {
+              setIsPolygonDrawing(false);
+              setIsElevationActive(false);
+            }
             setIsDistanceMeasuring(true);
+            setActivePrimaryTool("distance");
             addNotification({
               type: "info",
               title: "Distance Tool Activated",
-              message: "Click on the map to start measuring distances",
+              message: multiToolMode
+                ? "Distance tool active (primary) - other tools remain available"
+                : "Click on the map to start measuring distances",
               duration: 3000
             });
           }
@@ -470,6 +161,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           if (isPolygonDrawing) {
             // If already active, deactivate
             setIsPolygonDrawing(false);
+            if (activePrimaryTool === "polygon") setActivePrimaryTool(null);
             addNotification({
               type: "info",
               title: "Polygon Tool Deactivated",
@@ -477,14 +169,19 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
               duration: 2000
             });
           } else {
-            // Deactivate other tools and activate polygon
-            setIsDistanceMeasuring(false);
-            setIsElevationActive(false);
+            // In multi-tool mode, don't deactivate other tools
+            if (!multiToolMode) {
+              setIsDistanceMeasuring(false);
+              setIsElevationActive(false);
+            }
             setIsPolygonDrawing(true);
+            setActivePrimaryTool("polygon");
             addNotification({
               type: "info",
               title: "Polygon Tool Activated",
-              message: "Click on the map to start drawing polygons",
+              message: multiToolMode
+                ? "Polygon tool active (primary) - other tools remain available"
+                : "Click on the map to start drawing polygons",
               duration: 3000
             });
           }
@@ -493,6 +190,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           if (isElevationActive) {
             // If already active, deactivate
             setIsElevationActive(false);
+            if (activePrimaryTool === "elevation") setActivePrimaryTool(null);
             addNotification({
               type: "info",
               title: "Elevation Tool Deactivated",
@@ -500,21 +198,86 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
               duration: 2000
             });
           } else {
-            // Deactivate other tools and activate elevation
-            setIsDistanceMeasuring(false);
-            setIsPolygonDrawing(false);
+            // In multi-tool mode, don't deactivate other tools
+            if (!multiToolMode) {
+              setIsDistanceMeasuring(false);
+              setIsPolygonDrawing(false);
+            }
             setIsElevationActive(true);
+            setActivePrimaryTool("elevation");
             addNotification({
               type: "info",
               title: "Elevation Tool Activated",
-              message: "Click on the map to analyze elevation data",
+              message: multiToolMode
+                ? "Elevation tool active (primary) - other tools remain available"
+                : "Click on the map to analyze elevation data",
               duration: 3000
             });
           }
           break;
       }
     },
-    [isDistanceMeasuring, isPolygonDrawing, isElevationActive, addNotification]
+    [
+      isDistanceMeasuring,
+      isPolygonDrawing,
+      isElevationActive,
+      multiToolMode,
+      activePrimaryTool,
+      addNotification
+    ]
+  );
+
+  // Multi-tool mode toggle
+  const toggleMultiToolMode = useCallback(() => {
+    setMultiToolMode((prev) => {
+      const newMode = !prev;
+      addNotification({
+        type: "info",
+        title: newMode
+          ? "Multi-Tool Mode Activated"
+          : "Multi-Tool Mode Deactivated",
+        message: newMode
+          ? "You can now use multiple tools simultaneously with smart suggestions"
+          : "Tools will now work in exclusive mode",
+        duration: 4000
+      });
+      return newMode;
+    });
+  }, [addNotification]);
+
+  // Prepare active tools data for MultiToolManager
+  const activeToolsData = useMemo(
+    () => [
+      {
+        id: "distance",
+        name: "Distance Measurement",
+        isActive: isDistanceMeasuring,
+        hasData: distanceToolHasData,
+        dataType: "measurements"
+      },
+      {
+        id: "polygon",
+        name: "Polygon Drawing",
+        isActive: isPolygonDrawing,
+        hasData: polygonToolHasData,
+        dataType: "polygons"
+      },
+      {
+        id: "elevation",
+        name: "Elevation Analysis",
+        isActive: isElevationActive,
+        hasData: elevationToolHasData,
+        dataType: "elevation_profiles"
+      }
+    ],
+    [
+      isDistanceMeasuring,
+      isPolygonDrawing,
+      isElevationActive,
+      distanceToolHasData,
+      polygonToolHasData,
+      elevationToolHasData
+    ]
   );
 
   // Panel handlers
@@ -545,6 +308,9 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
         case "layout":
           setShowLayoutManager(!showLayoutManager);
           break;
+        case "workflow":
+          setShowWorkflowPresets(!showWorkflowPresets);
+          break;
       }
     },
     [
@@ -555,14 +321,15 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
       showDataImport,
       showInfrastructureData,
       showDataManager,
-      showLayoutManager
+      showLayoutManager,
+      showWorkflowPresets
     ]
   );
 
   // Search system handlers
   const handleSearchResultSelect = useCallback(
     (result: SearchResult) => {
-      console.log("Selected search result:", result);
+      // Handle selected search result
       addNotification({
         type: "info",
         title: "Location Selected",
@@ -575,7 +342,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
 
   const handleNavigateToLocation = useCallback(
     (coords: Coordinates) => {
-      console.log("Navigating to:", coords);
+      // Navigate to coordinates
       addNotification({
         type: "success",
         title: "Navigation",
@@ -587,6 +354,78 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
     },
     [addNotification]
   );
+
+  // Workflow system handlers
+  const handleWorkflowStart = useCallback(
+    (workflow: WorkflowPreset) => {
+      setActiveWorkflow(workflow);
+      setCurrentWorkflowStep(0);
+      setShowWorkflowPresets(false);
+
+      // Activate the first tool in the workflow
+      if (workflow.steps.length > 0) {
+        const firstStep = workflow.steps[0];
+        handleToolActivation(firstStep.toolId);
+      }
+
+      addNotification({
+        type: "success",
+        title: "Workflow Started",
+        message: `Starting "${workflow.name}" - Step 1: ${workflow.steps[0]?.title}`,
+        duration: 4000
+      });
+    },
+    [handleToolActivation, addNotification]
+  );
+
+  const handleWorkflowAdvance = useCallback(() => {
+    if (
+      activeWorkflow &&
+      currentWorkflowStep < activeWorkflow.steps.length - 1
+    ) {
+      const nextStep = currentWorkflowStep + 1;
+      setCurrentWorkflowStep(nextStep);
+
+      // Activate the next tool
+      const nextStepData = activeWorkflow.steps[nextStep];
+      handleToolActivation(nextStepData.toolId);
+
+      addNotification({
+        type: "info",
+        title: "Workflow Advanced",
+        message: `Step ${nextStep + 1}: ${nextStepData.title}`,
+        duration: 3000
+      });
+    } else if (activeWorkflow) {
+      // Workflow completed
+      setActiveWorkflow(null);
+      setCurrentWorkflowStep(0);
+      addNotification({
+        type: "success",
+        title: "Workflow Completed",
+        message: `"${activeWorkflow.name}" completed successfully!`,
+        duration: 4000
+      });
+    }
+  }, [
+    activeWorkflow,
+    currentWorkflowStep,
+    handleToolActivation,
+    addNotification
+  ]);
+
+  const handleWorkflowCancel = useCallback(() => {
+    if (activeWorkflow) {
+      setActiveWorkflow(null);
+      setCurrentWorkflowStep(0);
+      addNotification({
+        type: "warning",
+        title: "Workflow Cancelled",
+        message: `"${activeWorkflow.name}" was cancelled`,
+        duration: 3000
+      });
+    }
+  }, [activeWorkflow, addNotification]);
 
   const render = (status: any) => {
     if (status === "LOADING") {
@@ -627,17 +466,17 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
     return (
       <div className="relative h-full w-full">
         {/* Main Google Maps Component */}
-        <GoogleMap
-          center={{ lat: center[0], lng: center[1] }}
+        <GoogleMapContainer
+          center={center}
           zoom={zoom}
-          onMapReady={(map) => {
+          onMapReady={(map: google.maps.Map) => {
             setMapInstance(map);
             if (onMapReady) onMapReady(map);
           }}
         />
 
         {/* Live Coordinate Display - Smaller & More Compact */}
-        <div className="fixed bottom-6 right-0 z-50">
+        <div className="fixed bottom-16 right-0 z-50">
           <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200/50 min-w-[180px] max-w-[200px]">
             <div className="px-2 py-1.5 border-b border-gray-200/50">
               <h3 className="text-xs font-semibold text-gray-900 flex items-center">
@@ -655,8 +494,9 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           map={mapInstance}
           currentMapType={currentMapType}
           onMapTypeChange={setCurrentMapType}
+          multiToolMode={multiToolMode}
+          onMultiToolToggle={toggleMultiToolMode}
         />
-
 
         {/* Floating Tool Panel */}
         <FloatingToolPanel
@@ -673,34 +513,51 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           showInfrastructureData={showInfrastructureData}
           showDataManager={showDataManager}
           showLayoutManager={showLayoutManager}
+          showWorkflowPresets={showWorkflowPresets}
           onToolActivation={handleToolActivation}
           onTogglePanel={handleTogglePanel}
         />
 
+        {/* Multi-Tool System Manager */}
+        {multiToolMode && (
+          <MultiToolManager
+            activeTools={activeToolsData}
+            onToolActivation={handleToolActivation}
+          />
+        )}
 
         {/* Tool Components */}
         <DistanceMeasurementTool
           isActive={isDistanceMeasuring}
-          onToggle={() => handleToolActivation('distance')}
+          onToggle={() => handleToolActivation("distance")}
           map={mapInstance}
           mapWidth={800}
           mapHeight={600}
+          onDataChange={setDistanceToolHasData}
+          isPrimaryTool={activePrimaryTool === "distance"}
+          multiToolMode={multiToolMode}
         />
 
         <PolygonDrawingTool
           isActive={isPolygonDrawing}
-          onToggle={() => handleToolActivation('polygon')}
+          onToggle={() => handleToolActivation("polygon")}
           map={mapInstance}
           mapWidth={800}
           mapHeight={600}
+          onDataChange={setPolygonToolHasData}
+          isPrimaryTool={activePrimaryTool === "polygon"}
+          multiToolMode={multiToolMode}
         />
 
         <ElevationTool
           isActive={isElevationActive}
-          onToggle={() => handleToolActivation('elevation')}
+          onToggle={() => handleToolActivation("elevation")}
           map={mapInstance}
           mapWidth={800}
           mapHeight={600}
+          onDataChange={setElevationToolHasData}
+          isPrimaryTool={activePrimaryTool === "elevation"}
+          multiToolMode={multiToolMode}
         />
 
         <GeofencingSystem
@@ -726,7 +583,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
             isAdmin={isAdmin}
             currentUserId={user?.id || ""}
             onAssignmentChange={(assignments) => {
-              console.log("Region assignments updated:", assignments);
+              // Region assignments updated
             }}
           />
         )}
@@ -779,10 +636,32 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           <DataManager
             onClose={() => setShowDataManager(false)}
             onItemLoad={(item: SavedDataItem) => {
-              console.log("Loading saved data:", item);
+              // Loading saved data
               addNotification({
                 type: "success",
                 message: `Loaded ${item.name}`,
+                duration: 3000
+              });
+            }}
+            activeTools={{
+              distance: {
+                isActive: isDistanceMeasuring,
+                hasData: distanceToolHasData
+              },
+              polygon: {
+                isActive: isPolygonDrawing,
+                hasData: polygonToolHasData
+              },
+              elevation: {
+                isActive: isElevationActive,
+                hasData: elevationToolHasData
+              }
+            }}
+            onToolDataSave={(toolId, data) => {
+              addNotification({
+                type: "info",
+                title: "Tool Data Saved",
+                message: `${toolId} data has been saved to the data manager`,
                 duration: 3000
               });
             }}
@@ -862,7 +741,7 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
             isAdmin={isAdmin}
             currentUserId={user?.id || ""}
             onAssignmentChange={(assignments) => {
-              console.log("Region assignments updated:", assignments);
+              // Region assignments updated
             }}
           />
         )}
@@ -915,10 +794,32 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
           <DataManager
             onClose={() => setShowDataManager(false)}
             onItemLoad={(item: SavedDataItem) => {
-              console.log("Loading saved data:", item);
+              // Loading saved data
               addNotification({
                 type: "success",
                 message: `Loaded ${item.name}`,
+                duration: 3000
+              });
+            }}
+            activeTools={{
+              distance: {
+                isActive: isDistanceMeasuring,
+                hasData: distanceToolHasData
+              },
+              polygon: {
+                isActive: isPolygonDrawing,
+                hasData: polygonToolHasData
+              },
+              elevation: {
+                isActive: isElevationActive,
+                hasData: elevationToolHasData
+              }
+            }}
+            onToolDataSave={(toolId, data) => {
+              addNotification({
+                type: "info",
+                title: "Tool Data Saved",
+                message: `${toolId} data has been saved to the data manager`,
                 duration: 3000
               });
             }}
@@ -974,6 +875,58 @@ const ComprehensiveGoogleMapInterface: React.FC<ComprehensiveGoogleMapInterfaceP
                       Acknowledge
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Workflow Presets System */}
+        <WorkflowPresets
+          isActive={showWorkflowPresets}
+          onClose={() => setShowWorkflowPresets(false)}
+          onWorkflowStart={handleWorkflowStart}
+          activeWorkflow={activeWorkflow}
+          currentStep={currentWorkflowStep}
+        />
+
+        {/* Global Keyboard Shortcuts */}
+        <KeyboardShortcuts
+          onToolActivation={handleToolActivation}
+          onWorkflowOpen={() => setShowWorkflowPresets(true)}
+          onDataManagerOpen={() => setShowDataManager(true)}
+          onSearchOpen={() => setShowSearchSystem(true)}
+        />
+
+        {/* Active Workflow Status Bar */}
+        {activeWorkflow && (
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg px-6 py-3 shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-white/20 rounded-full animate-pulse"></div>
+                  <span className="font-semibold">{activeWorkflow.name}</span>
+                </div>
+                <div className="text-sm opacity-90">
+                  Step {currentWorkflowStep + 1} of{" "}
+                  {activeWorkflow.steps.length}:{" "}
+                  {activeWorkflow.steps[currentWorkflowStep]?.title}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleWorkflowAdvance}
+                    className="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm transition-colors"
+                  >
+                    {currentWorkflowStep < activeWorkflow.steps.length - 1
+                      ? "Next Step"
+                      : "Complete"}
+                  </button>
+                  <button
+                    onClick={handleWorkflowCancel}
+                    className="bg-red-500/20 hover:bg-red-500/30 px-3 py-1 rounded text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>

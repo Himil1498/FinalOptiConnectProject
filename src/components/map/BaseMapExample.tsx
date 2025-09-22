@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import BaseMap from "./BaseMap";
 import BaseMapProvider, { useBaseMap } from "./BaseMapProvider";
+import DistanceMeasurementTool from "./DistanceMeasurementTool";
 import { Coordinates } from "../../types";
 
 interface MapMarkerProps {
@@ -37,10 +38,21 @@ const MapMarker: React.FC<MapMarkerProps> = ({ position, title, icon }) => {
 
 const BaseMapContent: React.FC = () => {
   const [clickedLocations, setClickedLocations] = useState<Coordinates[]>([]);
-  const { setMapClickHandler, clearMarkers } = useBaseMap();
+  const [isDistanceMeasuring, setIsDistanceMeasuring] = useState(false);
+  const { map, setMapClickHandler, clearMarkers } = useBaseMap();
+
+  // Handle distance tool activation
+  const handleDistanceToolToggle = useCallback(() => {
+    setIsDistanceMeasuring(prev => !prev);
+  }, []);
 
   // Handle map clicks
   const handleMapClick = useCallback((coordinates: Coordinates) => {
+    // If distance tool is active, let it handle clicks
+    if (isDistanceMeasuring) {
+      return;
+    }
+
     setClickedLocations(prev => [...prev, coordinates]);
 
     // Show notification
@@ -53,7 +65,7 @@ const BaseMapContent: React.FC = () => {
       }
     });
     window.dispatchEvent(notificationEvent);
-  }, []);
+  }, [isDistanceMeasuring]);
 
   React.useEffect(() => {
     setMapClickHandler(handleMapClick);
@@ -114,6 +126,19 @@ const BaseMapContent: React.FC = () => {
             • Use map controls to zoom and change view
             • {clickedLocations.length} locations clicked
           </div>
+
+          {/* Distance Tool Button */}
+          <button
+            onClick={handleDistanceToolToggle}
+            className={`w-full text-xs px-3 py-1 rounded transition-colors ${
+              isDistanceMeasuring
+                ? "bg-blue-500 text-white hover:bg-blue-600"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            📏 {isDistanceMeasuring ? "Stop" : "Start"} Distance Tool
+          </button>
+
           {clickedLocations.length > 0 && (
             <button
               onClick={clearAllMarkers}
@@ -143,6 +168,15 @@ const BaseMapContent: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Distance Measurement Tool */}
+      <DistanceMeasurementTool
+        isActive={isDistanceMeasuring}
+        onToggle={handleDistanceToolToggle}
+        map={map}
+        mapWidth={800}
+        mapHeight={600}
+      />
     </div>
   );
 };

@@ -45,19 +45,69 @@ const SimpleTooltip: React.FC<SimpleTooltipProps> = ({
           break;
       }
 
-      // Keep tooltip within viewport
+      // Keep tooltip within viewport and avoid sidebar
       const viewport = {
         width: window.innerWidth,
         height: window.innerHeight
       };
 
-      if (left < 8) left = 8;
+      // Detect sidebar width to avoid positioning behind it
+      let sidebarWidth = 0;
+      const sidebarSelectors = [
+        ".dashboard-sidebar",
+        '[class*="sidebar"]',
+        'nav[class*="left"]',
+        "aside",
+        '[class*="navigation"]',
+        '[class*="menu"]',
+        ".fixed.left-0",
+        ".fixed.inset-y-0"
+      ];
+
+      for (const selector of sidebarSelectors) {
+        const sidebar = document.querySelector(selector);
+        if (sidebar) {
+          const sidebarRect = sidebar.getBoundingClientRect();
+          const computedStyle = window.getComputedStyle(sidebar);
+          const isVisible =
+            computedStyle.display !== "none" &&
+            computedStyle.visibility !== "hidden" &&
+            sidebarRect.width > 0;
+
+          if (isVisible && sidebarRect.left <= 10) { // Left-positioned sidebar
+            sidebarWidth = sidebarRect.width + 16; // Add some padding
+            break;
+          }
+        }
+      }
+
+      // Adjust positioning to avoid sidebar overlap
+      const minLeft = Math.max(8, sidebarWidth);
+
+      if (left < minLeft) left = minLeft;
       if (left + tooltipRect.width > viewport.width - 8) {
         left = viewport.width - tooltipRect.width - 8;
       }
       if (top < 8) top = 8;
       if (top + tooltipRect.height > viewport.height - 8) {
         top = viewport.height - tooltipRect.height - 8;
+      }
+
+      // If positioning 'left' would put tooltip behind sidebar, switch to 'right'
+      if (position === 'left' && left <= sidebarWidth) {
+        // Recalculate for right position
+        top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
+        left = triggerRect.right + 8;
+
+        // Ensure it still fits in viewport
+        if (left + tooltipRect.width > viewport.width - 8) {
+          // If right doesn't work either, position above/below
+          left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
+          left = Math.max(minLeft, Math.min(left, viewport.width - tooltipRect.width - 8));
+          top = triggerRect.top > viewport.height / 2
+            ? triggerRect.top - tooltipRect.height - 8
+            : triggerRect.bottom + 8;
+        }
       }
 
       setTooltipStyle({

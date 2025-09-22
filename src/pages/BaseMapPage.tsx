@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import NavigationBar from '../components/common/NavigationBar';
 import BaseMapExample from '../components/map/BaseMapExample';
+import Footer from '../components/common/Footer';
 import { Link } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const BaseMapPage: React.FC = () => {
+  const [isFooterCollapsed, setIsFooterCollapsed] = useState(false);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavigationBar />
@@ -177,7 +180,7 @@ addMarker({
                 <code className="text-xs text-gray-600">
                   {`<BaseMap
   onMapClick={(coordinates) => {
-    console.log('Clicked:', coordinates);
+    // Handle click coordinates
   }}
 />`}
                 </code>
@@ -186,6 +189,15 @@ addMarker({
           </div>
         </div>
       </div>
+
+      {/* Add bottom padding to prevent content overlap with footer */}
+      <div className={`${isFooterCollapsed ? 'pb-10' : 'pb-20'}`}></div>
+
+      <Footer
+        isMapView={true}
+        isCollapsed={isFooterCollapsed}
+        onToggleCollapse={() => setIsFooterCollapsed(!isFooterCollapsed)}
+      />
     </div>
   );
 };

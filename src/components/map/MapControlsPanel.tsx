@@ -9,7 +9,8 @@ import {
   PhotoIcon,
   BeakerIcon,
   MapPinIcon,
-  ArrowsRightLeftIcon
+  ArrowsRightLeftIcon,
+  Squares2X2Icon
 } from "@heroicons/react/24/outline";
 import { useFullscreen } from "../../hooks/useFullscreen";
 import SimpleTooltip from "../common/SimpleTooltip";
@@ -18,12 +19,16 @@ interface MapControlsPanelProps {
   map: google.maps.Map | null;
   currentMapType?: string;
   onMapTypeChange?: (mapType: string) => void;
+  multiToolMode?: boolean;
+  onMultiToolToggle?: () => void;
 }
 
 const MapControlsPanel: React.FC<MapControlsPanelProps> = ({
   map,
   currentMapType = "hybrid",
-  onMapTypeChange
+  onMapTypeChange,
+  multiToolMode = false,
+  onMultiToolToggle
 }) => {
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -224,7 +229,7 @@ const MapControlsPanel: React.FC<MapControlsPanelProps> = ({
 
   const handleMapTypeChange = (mapType: string) => {
     if (map) {
-      console.log("Changing map type to:", mapType); // Debug log
+      // Changing map type
 
       let googleMapType: google.maps.MapTypeId;
       switch (mapType) {
@@ -269,7 +274,7 @@ const MapControlsPanel: React.FC<MapControlsPanelProps> = ({
         });
         window.dispatchEvent(notificationEvent);
 
-        console.log("Map type successfully changed to:", mapType);
+        // Map type successfully changed
       } catch (error) {
         console.error("Error changing map type:", error);
 
@@ -327,125 +332,136 @@ const MapControlsPanel: React.FC<MapControlsPanelProps> = ({
 
   return (
     <div
-      className="fixed right-0 z-50"
+      className="fixed right-0 z-50 w-12"
       style={{ top: "4rem" }}
     >
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/50">
-        {/* Main Controls */}
-        <div className="flex flex-col">
+      <div className="h-full bg-gradient-to-b from-white via-gray-50/98 to-gray-100/95 backdrop-blur-sm border-l-2 border-gray-200/60 shadow-2xl flex flex-col">
+        {/* Clean icon strip like collapsed sidebar */}
+        <div className="flex flex-col space-y-1 p-1">
           {/* Zoom Controls */}
-          <div className="p-2 border-b border-gray-200/50">
-            <div className="flex flex-col space-y-1">
-              <SimpleTooltip content="Zoom In" position="left">
-                <button
-                  onClick={handleZoomIn}
-                  className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
-                >
-                  <MagnifyingGlassPlusIcon className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-200" />
-                </button>
-              </SimpleTooltip>
-              <SimpleTooltip content="Zoom Out" position="left">
-                <button
-                  onClick={handleZoomOut}
-                  className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
-                >
-                  <MagnifyingGlassMinusIcon className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-200" />
-                </button>
-              </SimpleTooltip>
-            </div>
-          </div>
+          <SimpleTooltip content="Zoom In" position="left">
+            <button
+              onClick={handleZoomIn}
+              className="w-full flex items-center justify-center p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
+            >
+              <MagnifyingGlassPlusIcon className="h-6 w-6 text-blue-500 group-hover:text-blue-600 transition-colors duration-200" />
+            </button>
+          </SimpleTooltip>
+          <SimpleTooltip content="Zoom Out" position="left">
+            <button
+              onClick={handleZoomOut}
+              className="w-full flex items-center justify-center p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
+            >
+              <MagnifyingGlassMinusIcon className="h-6 w-6 text-blue-500 group-hover:text-blue-600 transition-colors duration-200" />
+            </button>
+          </SimpleTooltip>
 
           {/* Location & Resize Controls */}
-          <div className="p-2 border-b border-gray-200/50">
-            <div className="flex flex-col space-y-1">
-              <SimpleTooltip content="Find My Location" position="left">
-                <button
-                  onClick={handleMyLocation}
-                  className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
-                >
-                  <MapPinIcon className="h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-200" />
-                </button>
-              </SimpleTooltip>
-              <SimpleTooltip content="Fit India on Screen" position="left">
-                <button
-                  onClick={handleResizeToIndia}
-                  className="p-2 hover:bg-green-50 hover:text-green-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
-                >
-                  <ArrowsRightLeftIcon className="h-5 w-5 text-gray-600 group-hover:text-green-600 transition-colors duration-200" />
-                </button>
-              </SimpleTooltip>
-            </div>
-          </div>
+          <SimpleTooltip content="Find My Location" position="left">
+            <button
+              onClick={handleMyLocation}
+              className="w-full flex items-center justify-center p-2 hover:bg-green-50 hover:text-green-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
+            >
+              <MapPinIcon className="h-6 w-6 text-green-500 group-hover:text-green-600 transition-colors duration-200" />
+            </button>
+          </SimpleTooltip>
+          <SimpleTooltip content="Fit India on Screen" position="left">
+            <button
+              onClick={handleResizeToIndia}
+              className="w-full flex items-center justify-center p-2 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
+            >
+              <ArrowsRightLeftIcon className="h-6 w-6 text-emerald-500 group-hover:text-emerald-600 transition-colors duration-200" />
+            </button>
+          </SimpleTooltip>
 
           {/* Fullscreen Control */}
-          <div className="p-2 border-b border-gray-200/50">
+          <SimpleTooltip
+            content={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            position="left"
+          >
+            <button
+              onClick={toggleFullscreen}
+              className="w-full flex items-center justify-center p-2 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
+            >
+              {isFullscreen ? (
+                <ArrowsPointingInIcon className="h-6 w-6 text-purple-500 group-hover:text-purple-600 transition-colors duration-200" />
+              ) : (
+                <ArrowsPointingOutIcon className="h-6 w-6 text-purple-500 group-hover:text-purple-600 transition-colors duration-200" />
+              )}
+            </button>
+          </SimpleTooltip>
+
+          {/* Map Type Controls */}
+          <SimpleTooltip content="Change Map Type" position="left">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="w-full flex items-center justify-center p-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95"
+            >
+              <GlobeAltIcon className="h-6 w-6 text-indigo-500 group-hover:text-indigo-600 transition-colors duration-200" />
+            </button>
+          </SimpleTooltip>
+
+          {/* Multi-Tool Mode Toggle */}
+          {onMultiToolToggle && (
             <SimpleTooltip
-              content={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              content={multiToolMode ? "Switch to Single Tool Mode" : "Switch to Multi-Tool Mode"}
               position="left"
             >
               <button
-                onClick={toggleFullscreen}
-                className="p-2 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-all duration-200 ease-in-out group w-full hover:scale-110 active:scale-95"
+                onClick={onMultiToolToggle}
+                className={`w-full flex items-center justify-center p-2 rounded-lg transition-all duration-200 ease-in-out group hover:scale-110 active:scale-95 ${
+                  multiToolMode
+                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                    : 'hover:bg-amber-50 hover:text-amber-600'
+                }`}
               >
-                {isFullscreen ? (
-                  <ArrowsPointingInIcon className="h-5 w-5 text-gray-600 group-hover:text-purple-600 transition-colors duration-200" />
-                ) : (
-                  <ArrowsPointingOutIcon className="h-5 w-5 text-gray-600 group-hover:text-purple-600 transition-colors duration-200" />
-                )}
+                <Squares2X2Icon className={`h-6 w-6 transition-colors duration-200 ${
+                  multiToolMode
+                    ? 'text-green-700'
+                    : 'text-amber-500 group-hover:text-amber-600'
+                }`} />
               </button>
             </SimpleTooltip>
-          </div>
-
-          {/* Map Type Controls */}
-          <div className="p-2">
-            <SimpleTooltip content="Change Map Type" position="left">
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full p-2 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-all duration-200 ease-in-out group flex items-center justify-center hover:scale-110 active:scale-95"
-              >
-                <GlobeAltIcon className="h-5 w-5 text-gray-600 group-hover:text-indigo-600 transition-colors duration-200" />
-              </button>
-            </SimpleTooltip>
-
-            {/* Expanded Map Type Options */}
-            {isExpanded && (
-              <div className="absolute top-0 right-full mr-2 bg-white/95 backdrop-blur-sm border border-gray-200/50 rounded-lg shadow-xl p-2 min-w-[160px]">
-                <div className="text-xs font-medium text-gray-700 mb-2 px-2">
-                  Map Type
-                </div>
-                <div className="space-y-1">
-                  {mapTypes.map((type) => {
-                    const Icon = type.icon;
-                    const isActive = currentMapType === type.id;
-
-                    return (
-                      <button
-                        key={type.id}
-                        onClick={() => {
-                          handleMapTypeChange(type.id);
-                          setIsExpanded(false);
-                        }}
-                        className={`w-full flex items-center space-x-2 p-2 rounded-lg transition-colors text-left ${
-                          isActive
-                            ? "bg-blue-100 text-blue-900 border border-blue-200"
-                            : "hover:bg-gray-100 text-gray-700"
-                        }`}
-                        title={type.description}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="text-sm font-medium">{type.name}</span>
-                        {isActive && (
-                          <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
+
+      {/* Expanded Map Type Options */}
+      {isExpanded && (
+        <div className="absolute top-0 right-full mr-3 bg-white border-2 border-gray-200 rounded-xl shadow-2xl p-3 min-w-[180px] animate-in slide-in-from-right-4 duration-300">
+          <div className="text-xs font-semibold text-gray-800 mb-3 px-2 py-1 bg-gradient-to-r from-gray-100 to-gray-50 rounded-lg border border-gray-200">
+            🗺️ Map Type
+          </div>
+          <div className="space-y-1">
+            {mapTypes.map((type) => {
+              const Icon = type.icon;
+              const isActive = currentMapType === type.id;
+
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => {
+                    handleMapTypeChange(type.id);
+                    setIsExpanded(false);
+                  }}
+                  className={`w-full flex items-center space-x-2 p-2 rounded-lg transition-colors text-left ${
+                    isActive
+                      ? "bg-blue-100 text-blue-900 border border-blue-200"
+                      : "hover:bg-gray-100 text-gray-700"
+                  }`}
+                  title={type.description}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-sm font-medium">{type.name}</span>
+                  {isActive && (
+                    <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full"></div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Click outside to close map type menu */}
       {isExpanded && (

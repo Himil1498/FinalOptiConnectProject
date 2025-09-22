@@ -713,7 +713,7 @@ const ComprehensiveSearchSystem: React.FC<ComprehensiveSearchSystemProps> = ({
                                 key={action.id}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  console.log(`Action: ${action.action} on ${result.id}`);
+                                  // Handle action in real implementation
                                 }}
                                 className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
                               >
