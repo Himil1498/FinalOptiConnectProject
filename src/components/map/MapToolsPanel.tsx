@@ -26,6 +26,7 @@ const MapToolsPanel: React.FC<MapToolsPanelExtendedProps> = ({
   showDataManager,
   showLayoutManager,
   showWorkflowPresets,
+  showKMLLayers,
   onToolActivation,
   onTogglePanel,
   mapInstance,
@@ -61,6 +62,7 @@ const MapToolsPanel: React.FC<MapToolsPanelExtendedProps> = ({
         showDataManager={showDataManager}
         showLayoutManager={showLayoutManager}
         showWorkflowPresets={showWorkflowPresets}
+        showKMLLayers={showKMLLayers}
         onToolActivation={onToolActivation}
         onTogglePanel={onTogglePanel}
       />

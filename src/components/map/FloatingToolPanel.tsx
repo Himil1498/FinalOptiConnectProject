@@ -12,7 +12,8 @@ import {
   Bars3Icon,
   ShieldCheckIcon,
   WrenchScrewdriverIcon,
-  CubeIcon
+  CubeIcon,
+  MapPinIcon
 } from '@heroicons/react/24/outline';
 import { useFullscreen } from '../../hooks/useFullscreen';
 import { themeClasses, buttonVariants, focusStyles, componentPatterns } from '../../utils/lightThemeHelper';
@@ -37,6 +38,7 @@ interface FloatingToolPanelProps {
   showDataManager: boolean;
   showLayoutManager: boolean;
   showWorkflowPresets: boolean;
+  showKMLLayers: boolean;
 
   // Handlers
   onToolActivation: (toolName: string) => void;
@@ -58,6 +60,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   showDataManager,
   showLayoutManager,
   showWorkflowPresets,
+  showKMLLayers,
   onToolActivation,
   onTogglePanel,
 }) => {

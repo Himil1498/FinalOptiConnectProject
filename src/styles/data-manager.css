@@ -1,7 +1,4 @@
 /* Data Manager Styles - Force Light Theme */
-@import url('./data-browser.css');
-@import url('./permission-manager.css');
-@import url('./version-history.css');
 
 /* Force light theme for Data Manager */
 .data-manager-overlay,

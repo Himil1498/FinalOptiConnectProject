@@ -1,18 +1,33 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTheme } from '../../hooks/useTheme';
+import { useInfrastructureData } from '../../hooks/useInfrastructureData';
 import {
-  InfrastructureItem,
   InfrastructureCategory,
-  InfrastructureFilter,
-  InfrastructureExport,
   Coordinates,
   User
 } from '../../types';
+import { InfrastructureItem, InfrastructureFilter } from '../../hooks/useInfrastructureData';
+import { ExportUtils, ExportFormat } from '../../utils/exportUtils';
+import AddPOPLocationForm, { POPLocationData } from '../map/AddPOPLocationForm';
+import {
+  InfrastructureDataTable,
+  InfrastructureFilters,
+  InfrastructureAddForm,
+  KMLDataTab,
+  InfrastructureCategoriesTab,
+  InfrastructureReportsTab
+} from './infrastructure';
 
-interface InfrastructureDataManagementProps {
+export interface InfrastructureDataManagementProps {
   isOpen: boolean;
   onClose: () => void;
   currentUserId: string;
   userRole: User['role'];
+  kmlData?: any[];
+  toggleKMLLayer?: (layerName: string) => void;
+  isKMLLayerVisible?: (layerName: string) => boolean;
+  map?: google.maps.Map | null;
+  onLocationAdd?: (location: POPLocationData) => void;
 }
 
 const InfrastructureDataManagement: React.FC<InfrastructureDataManagementProps> = ({
@@ -20,286 +35,232 @@ const InfrastructureDataManagement: React.FC<InfrastructureDataManagementProps> 
   onClose,
   currentUserId,
   userRole,
+  kmlData = [],
+  toggleKMLLayer,
+  isKMLLayerVisible,
+  map,
+  onLocationAdd,
 }) => {
-  const [activeTab, setActiveTab] = useState<'data' | 'add' | 'categories' | 'reports'>('data');
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [filter, setFilter] = useState<InfrastructureFilter>({});
+  const { uiState } = useTheme();
+  const isDark = uiState.theme.mode === 'dark';
+
+  // Use our custom hook for infrastructure data management
+  const infrastructureHook = useInfrastructureData();
+  const {
+    data: filteredData,
+    allData,
+    filters,
+    selectedItems,
+    setSelectedItems,
+    updateFilter,
+    addItem,
+    updateItem,
+    deleteItem,
+    bulkDelete,
+    setData
+  } = infrastructureHook;
+
+  // Local state for UI management
+  const [activeTab, setActiveTab] = useState<'data' | 'add' | 'categories' | 'reports' | 'kml'>('data');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingItem, setEditingItem] = useState<InfrastructureItem | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinates | null>(null);
-  const [showExportModal, setShowExportModal] = useState(false);
   const [formData, setFormData] = useState<Partial<InfrastructureItem>>({});
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [showExportFormatModal, setShowExportFormatModal] = useState(false);
+  const [exportType, setExportType] = useState<'bulk' | 'single'>('bulk');
 
-  // Mock categories for infrastructure
-  const categories: InfrastructureCategory[] = [
+  // KML Data state
+  const [kmlSearchTerm, setKmlSearchTerm] = useState('');
+  const [kmlTypeFilter, setKmlTypeFilter] = useState<'all' | 'pop' | 'subPop'>('all');
+
+  // Map interaction state
+  const [isSelectingLocation, setIsSelectingLocation] = useState(false);
+  const [pendingCoordinates, setPendingCoordinates] = useState<Coordinates | null>(null);
+  const [showAddLocationForm, setShowAddLocationForm] = useState(false);
+  const [mapClickListener, setMapClickListener] = useState<google.maps.MapsEventListener | null>(null);
+
+  // Mock categories data
+  const categories: any[] = useMemo(() => [
     {
-      id: 'towers',
-      name: 'Telecom Towers',
-      description: 'Cell towers and communication infrastructure',
-      icon: '📡',
-      color: '#3B82F6',
-      subCategories: [
-        {
-          id: 'cell-tower',
-          name: 'Cell Tower',
-          description: 'Mobile communication towers',
-          icon: '📡',
-          color: '#3B82F6',
-          attributes: [
-            { name: 'height', label: 'Height', type: 'number', required: true, unit: 'meters' },
-            { name: 'frequency', label: 'Frequency', type: 'select', required: true, options: ['2G', '3G', '4G', '5G'] },
-            { name: 'coverage_radius', label: 'Coverage Radius', type: 'number', required: false, unit: 'km' }
-          ]
-        },
-        {
-          id: 'microwave',
-          name: 'Microwave Tower',
-          description: 'Microwave communication towers',
-          attributes: [
-            { name: 'frequency_band', label: 'Frequency Band', type: 'text', required: true },
-            { name: 'power_output', label: 'Power Output', type: 'number', required: true, unit: 'watts' }
-          ]
-        }
-      ],
-      requiredAttributes: ['height', 'status'],
-      optionalAttributes: ['vendor', 'model'],
-      defaultAttributes: { status: 'active' },
-      permissions: ['view', 'edit', 'delete'],
-      isActive: true
-    },
-    {
-      id: 'equipment',
-      name: 'Network Equipment',
-      description: 'Routers, switches, and other network hardware',
-      icon: '🔧',
-      color: '#10B981',
-      subCategories: [
-        {
-          id: 'router',
-          name: 'Router',
-          description: 'Network routing equipment',
-          attributes: [
-            { name: 'ip_address', label: 'IP Address', type: 'text', required: true },
-            { name: 'ports', label: 'Number of Ports', type: 'number', required: true },
-            { name: 'throughput', label: 'Throughput', type: 'number', required: false, unit: 'Mbps' }
-          ]
-        },
-        {
-          id: 'switch',
-          name: 'Network Switch',
-          description: 'Network switching equipment',
-          attributes: [
-            { name: 'ports', label: 'Number of Ports', type: 'number', required: true },
-            { name: 'vlan_support', label: 'VLAN Support', type: 'boolean', required: false }
-          ]
-        }
-      ],
-      requiredAttributes: ['model', 'serialNumber'],
-      optionalAttributes: ['warranty', 'vendor'],
-      defaultAttributes: { status: 'active' },
-      permissions: ['view', 'edit'],
-      isActive: true
-    },
-    {
-      id: 'fiber',
-      name: 'Fiber Infrastructure',
-      description: 'Fiber optic cables and related infrastructure',
+      id: 'network',
+      name: 'Network Infrastructure',
       icon: '🌐',
-      color: '#F59E0B',
+      description: 'Core network components and connectivity',
       subCategories: [
-        {
-          id: 'fiber-cable',
-          name: 'Fiber Cable',
-          description: 'Fiber optic cables',
-          attributes: [
-            { name: 'length', label: 'Length', type: 'number', required: true, unit: 'meters' },
-            { name: 'fiber_count', label: 'Fiber Count', type: 'number', required: true },
-            { name: 'type', label: 'Cable Type', type: 'select', required: true, options: ['Single-mode', 'Multi-mode'] }
-          ]
-        },
-        {
-          id: 'splice-closure',
-          name: 'Splice Closure',
-          description: 'Fiber splice points',
-          attributes: [
-            { name: 'capacity', label: 'Splice Capacity', type: 'number', required: true },
-            { name: 'environment', label: 'Environment', type: 'select', required: true, options: ['Outdoor', 'Indoor', 'Underground'] }
-          ]
-        }
-      ],
-      requiredAttributes: ['length', 'type'],
-      optionalAttributes: ['installation_date'],
-      defaultAttributes: { status: 'active' },
-      permissions: ['view', 'edit'],
-      isActive: true
+        { id: 'fiber', name: 'Fiber Optic Cables', attributes: { priority: 'high', count: 45 } },
+        { id: 'switches', name: 'Network Switches', attributes: { priority: 'high', count: 23 } },
+        { id: 'routers', name: 'Core Routers', attributes: { priority: 'critical', count: 12 } }
+      ]
+    },
+    {
+      id: 'power',
+      name: 'Power Systems',
+      icon: '⚡',
+      description: 'Power supply and backup systems',
+      subCategories: [
+        { id: 'ups', name: 'UPS Systems', attributes: { priority: 'critical', count: 18 } },
+        { id: 'generators', name: 'Backup Generators', attributes: { priority: 'high', count: 8 } },
+        { id: 'solar', name: 'Solar Panels', attributes: { priority: 'medium', count: 15 } }
+      ]
+    },
+    {
+      id: 'transmission',
+      name: 'Transmission Equipment',
+      icon: '📡',
+      description: 'Wireless and transmission infrastructure',
+      subCategories: [
+        { id: 'towers', name: 'Cell Towers', attributes: { priority: 'critical', count: 32 } },
+        { id: 'antennas', name: 'Antennas', attributes: { priority: 'high', count: 67 } },
+        { id: 'microwave', name: 'Microwave Links', attributes: { priority: 'medium', count: 28 } }
+      ]
+    },
+    {
+      id: 'facilities',
+      name: 'Facilities',
+      icon: '🏢',
+      description: 'Physical infrastructure and buildings',
+      subCategories: [
+        { id: 'datacenters', name: 'Data Centers', attributes: { priority: 'critical', count: 5 } },
+        { id: 'cabinets', name: 'Equipment Cabinets', attributes: { priority: 'medium', count: 89 } },
+        { id: 'shelters', name: 'Equipment Shelters', attributes: { priority: 'medium', count: 34 } }
+      ]
     }
-  ];
+  ], []);
 
   // Mock infrastructure data
-  const mockInfrastructure: InfrastructureItem[] = [
-    {
-      id: 'tower-001',
-      name: 'Mumbai Central Tower',
-      category: categories[0],
-      subCategory: 'cell-tower',
-      description: 'Primary 5G tower serving Mumbai Central area',
-      coordinates: { lat: 19.0760, lng: 72.8777 },
-      address: 'Mumbai Central, Mumbai, Maharashtra',
-      customAttributes: {
-        height: 45,
-        frequency: '5G',
-        coverage_radius: 2.5,
-        power_consumption: 12.5
+  useEffect(() => {
+    const mockData: InfrastructureItem[] = [
+      {
+        id: '1',
+        name: 'Mumbai Central Tower',
+        type: 'Cell Tower',
+        location: 'Mumbai, Maharashtra',
+        coordinates: { lat: 19.0760, lng: 72.8777 },
+        status: 'active',
+        category: 'transmission',
+        subCategory: 'towers',
+        priority: 'critical',
+        cost: 2500000,
+        description: 'Primary transmission tower serving Mumbai central area',
+        createdDate: '2023-01-15',
+        lastUpdated: '2024-01-10'
       },
-      status: 'active',
-      priority: 'high',
-      owner: 'Opti Connect',
-      assignedTo: 'tech-team-mumbai',
-      installationDate: '2023-06-15',
-      maintenanceSchedule: '2024-06-15',
-      warrantyExpiry: '2025-06-15',
-      cost: 2500000,
-      vendor: 'Nokia',
-      model: 'AirScale 5G',
-      serialNumber: 'NK-5G-001-MUM',
-      attachments: [],
-      tags: ['5G', 'Mumbai', 'Primary'],
-      metadata: {
-        createdBy: currentUserId,
-        createdAt: '2023-06-01T00:00:00Z',
-        updatedBy: currentUserId,
-        updatedAt: '2024-01-15T10:30:00Z',
-        lastInspected: '2024-01-10T09:00:00Z',
-        inspectedBy: 'inspector-001',
-        version: 1
+      {
+        id: '2',
+        name: 'Delhi Hub Router',
+        type: 'Core Router',
+        location: 'New Delhi',
+        coordinates: { lat: 28.6139, lng: 77.2090 },
+        status: 'active',
+        category: 'network',
+        subCategory: 'routers',
+        priority: 'critical',
+        cost: 1800000,
+        description: 'Main routing hub for North India operations',
+        createdDate: '2023-03-20',
+        lastUpdated: '2024-01-08'
       },
-      permissions: {
-        view: ['all'],
-        edit: ['admin', 'manager', 'technician'],
-        delete: ['admin', 'manager']
-      },
-      isVisible: true,
-      layerId: 'towers-layer'
-    },
-    {
-      id: 'router-001',
-      name: 'Pune Core Router',
-      category: categories[1],
-      subCategory: 'router',
-      description: 'Core network router for Pune region',
-      coordinates: { lat: 18.5204, lng: 73.8567 },
-      address: 'Pune IT Park, Pune, Maharashtra',
-      customAttributes: {
-        ip_address: '192.168.1.1',
-        ports: 48,
-        throughput: 10000,
-        firmware_version: 'v2.1.4'
-      },
-      status: 'active',
-      priority: 'critical',
-      owner: 'Opti Connect',
-      assignedTo: 'network-team-pune',
-      installationDate: '2023-03-10',
-      cost: 850000,
-      vendor: 'Cisco',
-      model: 'ASR 9000',
-      serialNumber: 'CS-ASR9K-001-PUN',
-      attachments: [],
-      tags: ['Core', 'Pune', 'Critical'],
-      metadata: {
-        createdBy: currentUserId,
-        createdAt: '2023-03-01T00:00:00Z',
-        updatedBy: currentUserId,
-        updatedAt: '2024-01-12T14:20:00Z',
-        version: 2
-      },
-      permissions: {
-        view: ['all'],
-        edit: ['admin', 'manager'],
-        delete: ['admin']
-      },
-      isVisible: true,
-      layerId: 'equipment-layer'
-    },
-    {
-      id: 'fiber-001',
-      name: 'Mumbai-Pune Fiber Link',
-      category: categories[2],
-      subCategory: 'fiber-cable',
-      description: 'Primary fiber link between Mumbai and Pune',
-      coordinates: { lat: 18.8, lng: 73.2 },
-      address: 'Mumbai-Pune Expressway',
-      customAttributes: {
-        length: 148000,
-        fiber_count: 144,
-        type: 'Single-mode',
-        burial_depth: 1.2
-      },
-      status: 'active',
-      priority: 'high',
-      owner: 'Opti Connect',
-      installationDate: '2022-12-20',
-      cost: 15000000,
-      vendor: 'Corning',
-      model: 'SMF-28e+',
-      serialNumber: 'CR-SMF28-001-MH',
-      attachments: [],
-      tags: ['Fiber', 'Backbone', 'Interstate'],
-      metadata: {
-        createdBy: currentUserId,
-        createdAt: '2022-12-01T00:00:00Z',
-        updatedBy: currentUserId,
-        updatedAt: '2024-01-08T11:15:00Z',
-        version: 1
-      },
-      permissions: {
-        view: ['all'],
-        edit: ['admin', 'manager'],
-        delete: ['admin']
-      },
-      isVisible: true,
-      layerId: 'fiber-layer'
-    }
-  ];
-
-  // Filter infrastructure data
-  const filteredData = useMemo(() => {
-    return mockInfrastructure.filter(item => {
-      if (filter.categories && !filter.categories.includes(item.category.id)) return false;
-      if (filter.subCategories && !filter.subCategories.includes(item.subCategory!)) return false;
-      if (filter.status && !filter.status.includes(item.status)) return false;
-      if (filter.priority && !filter.priority.includes(item.priority)) return false;
-      if (filter.tags && !filter.tags.some(tag => item.tags.includes(tag))) return false;
-      if (filter.searchTerm) {
-        const term = filter.searchTerm.toLowerCase();
-        if (!item.name.toLowerCase().includes(term) &&
-            !item.description?.toLowerCase().includes(term) &&
-            !item.address?.toLowerCase().includes(term)) return false;
+      {
+        id: '3',
+        name: 'Bangalore DC UPS',
+        type: 'UPS System',
+        location: 'Bangalore, Karnataka',
+        coordinates: { lat: 12.9716, lng: 77.5946 },
+        status: 'maintenance',
+        category: 'power',
+        subCategory: 'ups',
+        priority: 'high',
+        cost: 950000,
+        description: 'Backup power system for Bangalore data center',
+        createdDate: '2023-06-10',
+        lastUpdated: '2024-01-05'
       }
-      return true;
-    });
-  }, [filter]);
+    ];
+    setData(mockData);
+  }, [setData]);
 
-  const handleAddItem = useCallback(() => {
-    setFormData({
-      category: categories[0],
-      status: 'active',
-      priority: 'medium',
-      owner: 'Opti Connect',
-      customAttributes: {},
-      tags: [],
-      attachments: [],
-      permissions: {
-        view: ['all'],
-        edit: ['admin', 'manager'],
-        delete: ['admin']
-      },
-      isVisible: true
-    });
-    setShowAddModal(true);
-  }, []);
+  // Filtered KML data
+  const filteredKMLData = useMemo(() => {
+    let filtered = kmlData;
+
+    if (kmlTypeFilter !== 'all') {
+      filtered = filtered.filter(item => item.type === kmlTypeFilter);
+    }
+
+    if (kmlSearchTerm) {
+      const searchLower = kmlSearchTerm.toLowerCase();
+      filtered = filtered.filter(item =>
+        item.name?.toLowerCase().includes(searchLower) ||
+        item.description?.toLowerCase().includes(searchLower) ||
+        item.extendedData?.status?.toLowerCase().includes(searchLower) ||
+        item.coordinates?.lat?.toString().includes(searchLower) ||
+        item.coordinates?.lng?.toString().includes(searchLower) ||
+        item.lat?.toString().includes(searchLower) ||
+        item.lng?.toString().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [kmlData, kmlTypeFilter, kmlSearchTerm]);
+
+  const manuallyAddedData = useMemo(() =>
+    kmlData.filter(item => item.extendedData?.isManuallyAdded),
+    [kmlData]
+  );
+
+  // ESC key handler
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEsc);
+      return () => document.removeEventListener('keydown', handleEsc);
+    }
+  }, [isOpen, onClose]);
+
+  // Permission helpers
+  const canAdd = useCallback(() => {
+    return ['admin', 'manager'].includes(userRole);
+  }, [userRole]);
+
+  const canEdit = useCallback((item: InfrastructureItem) => {
+    if (userRole === 'admin') return true;
+    if (userRole === 'manager') return true;
+    return false;
+  }, [userRole]);
+
+  const canDelete = useCallback((item: InfrastructureItem) => {
+    return userRole === 'admin';
+  }, [userRole]);
+
+  // Handlers
+  const handleFilterChange = useCallback((key: keyof InfrastructureFilter, value: string) => {
+    updateFilter(key, value);
+  }, [updateFilter]);
+
+  const handleItemSelect = useCallback((itemId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedItems(prev => [...prev, itemId]);
+    } else {
+      setSelectedItems(prev => prev.filter(id => id !== itemId));
+    }
+  }, [setSelectedItems]);
+
+  const handleSelectAll = useCallback((selected: boolean) => {
+    if (selected) {
+      setSelectedItems(filteredData.map(item => item.id));
+    } else {
+      setSelectedItems([]);
+    }
+  }, [filteredData, setSelectedItems]);
 
   const handleEditItem = useCallback((item: InfrastructureItem) => {
     setEditingItem(item);
@@ -307,886 +268,356 @@ const InfrastructureDataManagement: React.FC<InfrastructureDataManagementProps> 
     setShowEditModal(true);
   }, []);
 
-  const handleSaveItem = useCallback(() => {
-    // In real app, this would save to backend
-    setShowAddModal(false);
-    setShowEditModal(false);
-    setFormData({});
-    setEditingItem(null);
-  }, [formData]);
-
   const handleDeleteItem = useCallback((itemId: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
-      // In real app, this would delete from backend
+      deleteItem(itemId);
     }
-  }, []);
+  }, [deleteItem]);
 
   const handleBulkAction = useCallback((action: string) => {
-    // In real app, this would perform bulk action on backend
-    setSelectedItems([]);
-  }, [selectedItems]);
+    switch (action) {
+      case 'delete':
+        if (window.confirm(`Delete ${selectedItems.length} selected items?`)) {
+          bulkDelete();
+        }
+        break;
+      case 'export':
+        setExportType('bulk');
+        setShowExportFormatModal(true);
+        break;
+      case 'activate':
+        selectedItems.forEach(id => {
+          updateItem(id, { status: 'active' });
+        });
+        setSelectedItems([]);
+        break;
+      case 'maintenance':
+        selectedItems.forEach(id => {
+          updateItem(id, { status: 'maintenance' });
+        });
+        setSelectedItems([]);
+        break;
+    }
+  }, [selectedItems, bulkDelete, updateItem, setSelectedItems]);
 
-  const handleExport = useCallback((exportConfig: Partial<InfrastructureExport>) => {
-    // In real app, this would export data
-    setShowExportModal(false);
+  const handleQuickAdd = useCallback((category: InfrastructureCategory, subCategory: any) => {
+    setFormData({
+      category: category.name,
+      subCategory: subCategory.id,
+      status: 'active',
+      priority: 'medium'
+    });
+    setShowAddModal(true);
   }, []);
 
-  const handleMapClick = useCallback((coordinates: Coordinates) => {
-    setSelectedCoordinates(coordinates);
-    setFormData(prev => ({ ...prev, coordinates }));
-    setShowMapPicker(false);
+  // Map integration handlers
+  const handleSelectLocationFromMap = useCallback(() => {
+    if (!map) {
+      console.warn('No map instance available for location selection');
+      return;
+    }
+
+    console.log('Starting map location selection...');
+    setIsSelectingLocation(true);
+
+    if (mapClickListener) {
+      google.maps.event.removeListener(mapClickListener);
+      setMapClickListener(null);
+    }
+
+    const listener = map.addListener('click', (event: google.maps.MapMouseEvent) => {
+      console.log('Map clicked!', event.latLng?.toJSON());
+      if (event.latLng) {
+        const coordinates = {
+          lat: event.latLng.lat(),
+          lng: event.latLng.lng()
+        };
+        console.log('Setting coordinates:', coordinates);
+        setPendingCoordinates(coordinates);
+        setShowAddLocationForm(true);
+        setIsSelectingLocation(false);
+        google.maps.event.removeListener(listener);
+        setMapClickListener(null);
+      }
+    });
+
+    setMapClickListener(listener);
+    console.log('Map click listener added, listener ID:', listener);
+  }, [map, mapClickListener]);
+
+  const handleAddManually = useCallback(() => {
+    setPendingCoordinates(null);
+    setShowAddLocationForm(true);
   }, []);
 
-  const canEdit = useCallback((item: InfrastructureItem) => {
-    return item.permissions.edit.includes('all') ||
-           item.permissions.edit.includes(userRole) ||
-           item.metadata.createdBy === currentUserId;
-  }, [userRole, currentUserId]);
+  const handleCancelLocationSelection = useCallback(() => {
+    setIsSelectingLocation(false);
+    if (mapClickListener) {
+      google.maps.event.removeListener(mapClickListener);
+      setMapClickListener(null);
+    }
+  }, [mapClickListener]);
 
-  const canDelete = useCallback((item: InfrastructureItem) => {
-    return item.permissions.delete.includes('all') ||
-           item.permissions.delete.includes(userRole) ||
-           item.metadata.createdBy === currentUserId;
-  }, [userRole, currentUserId]);
+  const handleSaveLocation = useCallback((locationData: POPLocationData) => {
+    onLocationAdd?.(locationData);
+    setShowAddLocationForm(false);
+    setPendingCoordinates(null);
+  }, [onLocationAdd]);
+
+  const handleCloseAddLocationForm = useCallback(() => {
+    setShowAddLocationForm(false);
+    setPendingCoordinates(null);
+    handleCancelLocationSelection();
+  }, [handleCancelLocationSelection]);
+
+  const handleViewLocationOnMap = useCallback((item: any) => {
+    if (!map) {
+      console.warn('No map instance available');
+      return;
+    }
+
+    let coordinates;
+    if (item.coordinates) {
+      coordinates = item.coordinates;
+    } else if (item.lat && item.lng) {
+      coordinates = { lat: item.lat, lng: item.lng };
+    } else {
+      console.warn('No coordinates found for item:', item);
+      return;
+    }
+
+    map.panTo(coordinates);
+    map.setZoom(15);
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `
+        <div style="max-width: 300px;">
+          <h4 style="margin: 0 0 8px 0; color: #1f2937;">${item.name || 'Unknown Location'}</h4>
+          <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;"><strong>Type:</strong> ${item.type || 'N/A'}</p>
+          <p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;"><strong>Coordinates:</strong> ${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}</p>
+          ${item.description ? `<p style="margin: 0 0 4px 0; color: #6b7280; font-size: 14px;"><strong>Description:</strong> ${item.description}</p>` : ''}
+          ${item.extendedData?.status ? `<p style="margin: 0; color: #6b7280; font-size: 14px;"><strong>Status:</strong> ${item.extendedData.status}</p>` : ''}
+        </div>
+      `,
+      position: coordinates
+    });
+
+    infoWindow.open(map);
+
+    setTimeout(() => {
+      infoWindow.close();
+    }, 5000);
+  }, [map]);
+
+  const handleViewDetails = useCallback((item: any) => {
+    setSelectedItem(item);
+    setShowDetailsModal(true);
+  }, []);
+
+  const handleExportItem = useCallback((item: any) => {
+    setSelectedItem(item);
+    setExportType('single');
+    setShowExportFormatModal(true);
+  }, []);
+
+  const highlightSearchTerm = useCallback((text: string, term: string): React.ReactNode => {
+    if (!term) return text;
+
+    const regex = new RegExp(`(${term})`, 'gi');
+    const parts = text.split(regex);
+
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <mark key={index} className="bg-yellow-200 text-yellow-900 rounded px-1">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  }, []);
+
+  // Tab configuration
+  const tabs = [
+    { id: 'data', label: 'Infrastructure Data', icon: '📊', description: 'View and manage data' },
+    { id: 'add', label: 'Add New', icon: '➕', description: 'Create new entries' },
+    { id: 'categories', label: 'Categories', icon: '📂', description: 'Organize by type' },
+    { id: 'reports', label: 'Reports', icon: '📈', description: 'Analytics & insights' },
+    { id: 'kml', label: `KML Data (${kmlData.length})`, icon: '📍', description: 'Map visualization' }
+  ];
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black bg-opacity-50" onClick={onClose} />
-      <div className="absolute inset-4 bg-white rounded-lg shadow-2xl flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className={`w-full max-w-7xl h-full max-h-[90vh] rounded-lg shadow-xl overflow-hidden ${
+        isDark ? 'bg-gray-900' : 'bg-white'
+      }`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Infrastructure Data Management</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Manage telecom infrastructure with manual entry, coordinate input, and visualization
-            </p>
+        <div className={`px-6 py-4 border-b flex items-center justify-between ${
+          isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200'
+        }`}>
+          <div className="flex items-center space-x-3">
+            <div className={`p-2 rounded-lg ${
+              isDark ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-600'
+            }`}>
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Infrastructure Data Management
+              </h2>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                📋 Manage telecom infrastructure with manual entry, coordinate input, and visualization
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              isDark
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}
           >
-            <span className="text-2xl">×</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200">
-          {[
-            { id: 'data', label: 'Infrastructure Data', icon: '🏗️' },
-            { id: 'add', label: 'Add New', icon: '➕' },
-            { id: 'categories', label: 'Categories', icon: '📂' },
-            { id: 'reports', label: 'Reports', icon: '📊' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <span className="mr-2">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+        {/* Tabs */}
+        <div className={`px-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <nav className="flex space-x-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.id
+                    ? isDark
+                      ? 'border-blue-400 text-blue-400'
+                      : 'border-blue-500 text-blue-600'
+                    : isDark
+                      ? 'border-transparent text-gray-400 hover:text-gray-200'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </div>
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Tab Content */}
+        {/* Content */}
         <div className="flex-1 overflow-auto p-6">
           {/* Infrastructure Data Tab */}
           {activeTab === 'data' && (
             <div className="space-y-6">
-              {/* Filters and Actions */}
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Search */}
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search infrastructure..."
-                      value={filter.searchTerm || ''}
-                      onChange={(e) => setFilter(prev => ({ ...prev, searchTerm: e.target.value }))}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
-                  </div>
+              <InfrastructureFilters
+                filter={filters}
+                onFilterChange={handleFilterChange}
+                categories={categories}
+                selectedItems={selectedItems}
+                onBulkAction={handleBulkAction}
+                onAddNew={() => setShowAddModal(true)}
+                canAdd={canAdd()}
+              />
 
-                  {/* Category Filter */}
-                  <select
-                    value={filter.categories?.[0] || ''}
-                    onChange={(e) => setFilter(prev => ({
-                      ...prev,
-                      categories: e.target.value ? [e.target.value] : undefined
-                    }))}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.icon} {cat.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Status Filter */}
-                  <select
-                    value={filter.status?.[0] || ''}
-                    onChange={(e) => setFilter(prev => ({
-                      ...prev,
-                      status: e.target.value ? [e.target.value as any] : undefined
-                    }))}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="planned">Planned</option>
-                    <option value="decommissioned">Decommissioned</option>
-                  </select>
-
-                  {/* Priority Filter */}
-                  <select
-                    value={filter.priority?.[0] || ''}
-                    onChange={(e) => setFilter(prev => ({
-                      ...prev,
-                      priority: e.target.value ? [e.target.value as any] : undefined
-                    }))}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">All Priority</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {selectedItems.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">
-                        {selectedItems.length} selected
-                      </span>
-                      <button
-                        onClick={() => handleBulkAction('update_status')}
-                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                      >
-                        Update Status
-                      </button>
-                      <button
-                        onClick={() => handleBulkAction('delete')}
-                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => setShowExportModal(true)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Export
-                  </button>
-
-                  <button
-                    onClick={handleAddItem}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Add New
-                  </button>
-                </div>
-              </div>
-
-              {/* Infrastructure Grid/Table */}
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <input
-                            type="checkbox"
-                            className="rounded"
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedItems(filteredData.map(item => item.id));
-                              } else {
-                                setSelectedItems([]);
-                              }
-                            }}
-                          />
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Name & Location
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Category
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Priority
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Cost
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredData.map(item => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="checkbox"
-                              checked={selectedItems.includes(item.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedItems(prev => [...prev, item.id]);
-                                } else {
-                                  setSelectedItems(prev => prev.filter(id => id !== item.id));
-                                }
-                              }}
-                              className="rounded"
-                            />
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="text-2xl mr-3">{item.category.icon}</div>
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                                <div className="text-sm text-gray-500">
-                                  {item.coordinates.lat.toFixed(4)}, {item.coordinates.lng.toFixed(4)}
-                                </div>
-                                <div className="text-xs text-gray-400">{item.address}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{item.category.name}</div>
-                            <div className="text-sm text-gray-500">{item.subCategory}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              item.status === 'active' ? 'bg-green-100 text-green-800' :
-                              item.status === 'inactive' ? 'bg-red-100 text-red-800' :
-                              item.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                              item.status === 'planned' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              item.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                              item.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                              item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {item.priority}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {item.cost ? `₹${(item.cost / 100000).toFixed(1)}L` : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => {/* In real app, this would pan map to coordinates */}}
-                                className="text-blue-600 hover:text-blue-900"
-                              >
-                                📍
-                              </button>
-                              {canEdit(item) && (
-                                <button
-                                  onClick={() => handleEditItem(item)}
-                                  className="text-indigo-600 hover:text-indigo-900"
-                                >
-                                  ✏️
-                                </button>
-                              )}
-                              {canDelete(item) && (
-                                <button
-                                  onClick={() => handleDeleteItem(item.id)}
-                                  className="text-red-600 hover:text-red-900"
-                                >
-                                  🗑️
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <InfrastructureDataTable
+                data={filteredData}
+                selectedItems={selectedItems}
+                onItemSelect={handleItemSelect}
+                onSelectAll={handleSelectAll}
+                onEdit={handleEditItem}
+                onDelete={handleDeleteItem}
+                onViewLocation={handleViewLocationOnMap}
+                canEdit={canEdit}
+                canDelete={canDelete}
+              />
             </div>
           )}
 
           {/* Add New Tab */}
           {activeTab === 'add' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Quick Add Cards */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Quick Add</h3>
-                  {categories.map(category => (
-                    <div key={category.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-3xl">{category.icon}</div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{category.name}</h4>
-                          <p className="text-sm text-gray-500">{category.description}</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {category.subCategories.slice(0, 3).map(sub => (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              setFormData({
-                                category,
-                                subCategory: sub.id,
-                                status: 'active',
-                                priority: 'medium',
-                                customAttributes: {},
-                                tags: [],
-                                attachments: [],
-                                permissions: {
-                                  view: ['all'],
-                                  edit: ['admin', 'manager'],
-                                  delete: ['admin']
-                                },
-                                isVisible: true
-                              });
-                              setShowAddModal(true);
-                            }}
-                            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                          >
-                            Add {sub.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Coordinate Picker */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Coordinate Input</h3>
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Manual Coordinate Entry
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Latitude</label>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="19.0760"
-                              value={selectedCoordinates?.lat || ''}
-                              onChange={(e) => setSelectedCoordinates(prev => ({
-                                lat: parseFloat(e.target.value) || 0,
-                                lng: prev?.lng || 0
-                              }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs text-gray-500 mb-1">Longitude</label>
-                            <input
-                              type="number"
-                              step="any"
-                              placeholder="72.8777"
-                              value={selectedCoordinates?.lng || ''}
-                              onChange={(e) => setSelectedCoordinates(prev => ({
-                                lat: prev?.lat || 0,
-                                lng: parseFloat(e.target.value) || 0
-                              }))}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-center">
-                        <div className="text-sm text-gray-500 mb-2">OR</div>
-                        <button
-                          onClick={() => setShowMapPicker(true)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          📍 Pick from Map
-                        </button>
-                      </div>
-
-                      {selectedCoordinates && (
-                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                          <p className="text-sm text-green-800">
-                            Selected: {selectedCoordinates.lat.toFixed(6)}, {selectedCoordinates.lng.toFixed(6)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Recent Locations */}
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-3">Recent Locations</h4>
-                    <div className="space-y-2">
-                      {mockInfrastructure.slice(0, 3).map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => setSelectedCoordinates(item.coordinates)}
-                          className="w-full text-left p-2 hover:bg-gray-50 rounded border border-gray-100"
-                        >
-                          <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                          <div className="text-xs text-gray-500">
-                            {item.coordinates.lat.toFixed(4)}, {item.coordinates.lng.toFixed(4)}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <InfrastructureAddForm
+              categories={categories}
+              formData={formData}
+              selectedCoordinates={selectedCoordinates}
+              map={map}
+              isSelectingLocation={isSelectingLocation}
+              pendingCoordinates={pendingCoordinates}
+              showAddLocationForm={showAddLocationForm}
+              onFormDataChange={setFormData}
+              onCoordinatesChange={setSelectedCoordinates}
+              onShowMapPicker={() => setShowMapPicker(true)}
+              onQuickAdd={handleQuickAdd}
+              onSelectLocationFromMap={handleSelectLocationFromMap}
+              onAddManually={handleAddManually}
+              onCancelLocationSelection={handleCancelLocationSelection}
+              onSaveLocation={handleSaveLocation}
+              onCloseAddLocationForm={handleCloseAddLocationForm}
+            />
           )}
 
           {/* Categories Tab */}
           {activeTab === 'categories' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Infrastructure Categories</h3>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Add Category
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {categories.map(category => (
-                  <div key={category.id} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="text-3xl">{category.icon}</div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{category.name}</h4>
-                          <p className="text-sm text-gray-500">{category.description}</p>
-                        </div>
-                      </div>
-                      <div
-                        className="w-4 h-4 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700">Sub-categories</h5>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {category.subCategories.map(sub => (
-                            <span
-                              key={sub.id}
-                              className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded"
-                            >
-                              {sub.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700">Required Attributes</h5>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {category.requiredAttributes.map(attr => (
-                            <span
-                              key={attr}
-                              className="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded"
-                            >
-                              {attr}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex space-x-2">
-                      <button className="flex-1 px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors">
-                        Edit
-                      </button>
-                      <button className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
-                        Manage
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <InfrastructureCategoriesTab
+              categories={categories}
+              isDark={isDark}
+            />
           )}
 
           {/* Reports Tab */}
           {activeTab === 'reports' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Infrastructure Reports</h3>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Generate Report
-                </button>
-              </div>
+            <InfrastructureReportsTab
+              isDark={isDark}
+              dataLength={allData.length}
+            />
+          )}
 
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-100 text-sm">Total Items</p>
-                      <p className="text-3xl font-bold">{mockInfrastructure.length}</p>
-                    </div>
-                    <span className="text-4xl opacity-80">🏗️</span>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-green-100 text-sm">Active</p>
-                      <p className="text-3xl font-bold">
-                        {mockInfrastructure.filter(i => i.status === 'active').length}
-                      </p>
-                    </div>
-                    <span className="text-4xl opacity-80">✅</span>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-lg p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-yellow-100 text-sm">Maintenance</p>
-                      <p className="text-3xl font-bold">
-                        {mockInfrastructure.filter(i => i.status === 'maintenance').length}
-                      </p>
-                    </div>
-                    <span className="text-4xl opacity-80">⚠️</span>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-100 text-sm">Total Value</p>
-                      <p className="text-3xl font-bold">
-                        ₹{(mockInfrastructure.reduce((sum, i) => sum + (i.cost || 0), 0) / 10000000).toFixed(0)}Cr
-                      </p>
-                    </div>
-                    <span className="text-4xl opacity-80">💰</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Category Distribution */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Category Distribution</h4>
-                <div className="space-y-3">
-                  {categories.map(category => {
-                    const count = mockInfrastructure.filter(item => item.category.id === category.id).length;
-                    const percentage = (count / mockInfrastructure.length) * 100;
-                    return (
-                      <div key={category.id} className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-xl">{category.icon}</span>
-                          <span className="text-sm text-gray-600">{category.name}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-32 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="h-2 rounded-full"
-                              style={{
-                                width: `${percentage}%`,
-                                backgroundColor: category.color
-                              }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-900 w-8">{count}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+          {/* KML Data Tab */}
+          {activeTab === 'kml' && (
+            <KMLDataTab
+              kmlData={kmlData}
+              filteredKMLData={filteredKMLData}
+              manuallyAddedData={manuallyAddedData}
+              kmlTypeFilter={kmlTypeFilter}
+              kmlSearchTerm={kmlSearchTerm}
+              isDark={isDark}
+              map={map}
+              isSelectingLocation={isSelectingLocation}
+              onKmlTypeFilterChange={(filter) => {
+                setKmlTypeFilter(filter);
+              }}
+              onKmlSearchChange={setKmlSearchTerm}
+              onExportData={() => {
+                setExportType('bulk');
+                setShowExportFormatModal(true);
+              }}
+              onViewLocationOnMap={handleViewLocationOnMap}
+              onViewDetails={handleViewDetails}
+              onExportItem={handleExportItem}
+              onSelectLocationFromMap={handleSelectLocationFromMap}
+              onAddManually={handleAddManually}
+              onCancelLocationSelection={handleCancelLocationSelection}
+              highlightSearchTerm={highlightSearchTerm}
+            />
           )}
         </div>
 
-        {/* Add/Edit Modal */}
-        {(showAddModal || showEditModal) && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {showAddModal ? 'Add Infrastructure Item' : 'Edit Infrastructure Item'}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setShowEditModal(false);
-                    setFormData({});
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {/* Basic Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                    <input
-                      type="text"
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      placeholder="Infrastructure item name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      value={formData.category?.id || ''}
-                      onChange={(e) => {
-                        const category = categories.find(c => c.id === e.target.value);
-                        setFormData(prev => ({ ...prev, category, subCategory: undefined }));
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select category</option>
-                      {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.icon} {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {formData.category && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Sub-category</label>
-                      <select
-                        value={formData.subCategory || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, subCategory: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select sub-category</option>
-                        {formData.category.subCategories.map(sub => (
-                          <option key={sub.id} value={sub.id}>
-                            {sub.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={formData.status || 'active'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="maintenance">Maintenance</option>
-                      <option value="planned">Planned</option>
-                      <option value="decommissioned">Decommissioned</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Coordinates */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Coordinates</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="Latitude"
-                      value={formData.coordinates?.lat || selectedCoordinates?.lat || ''}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        coordinates: {
-                          lat: parseFloat(e.target.value) || 0,
-                          lng: prev.coordinates?.lng || selectedCoordinates?.lng || 0
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="Longitude"
-                      value={formData.coordinates?.lng || selectedCoordinates?.lng || ''}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        coordinates: {
-                          lat: prev.coordinates?.lat || selectedCoordinates?.lat || 0,
-                          lng: parseFloat(e.target.value) || 0
-                        }
-                      }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    placeholder="Detailed description of the infrastructure item"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setShowEditModal(false);
-                    setFormData({});
-                  }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveItem}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {showAddModal ? 'Add Item' : 'Save Changes'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Export Modal */}
-        {showExportModal && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Export Data</h3>
-                <button
-                  onClick={() => setShowExportModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
-                  <div className="space-y-2">
-                    {['csv', 'xlsx', 'kml', 'geojson', 'pdf'].map(format => (
-                      <label key={format} className="flex items-center">
-                        <input
-                          type="radio"
-                          name="format"
-                          value={format}
-                          className="mr-2"
-                        />
-                        <span className="text-sm text-gray-700 uppercase">{format}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" defaultChecked />
-                    <span className="text-sm text-gray-700">Include coordinates</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" className="mr-2" />
-                    <span className="text-sm text-gray-700">Include attachments</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowExportModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleExport({})}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Export
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Map Picker Modal */}
-        {showMapPicker && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Pick Location from Map</h3>
-                <button
-                  onClick={() => setShowMapPicker(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="h-64 bg-gradient-to-br from-blue-100 via-green-50 to-blue-200 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-4xl mb-4">🗺️</div>
-                  <p className="text-gray-600">Interactive map for coordinate selection</p>
-                  <p className="text-sm text-gray-500 mt-2">Click anywhere to select coordinates</p>
-                  <button
-                    onClick={() => handleMapClick({ lat: 19.0760, lng: 72.8777 })}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Select Mumbai Central (Demo)
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => setShowMapPicker(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Add POP Location Form */}
+        <AddPOPLocationForm
+          isOpen={showAddLocationForm}
+          onClose={handleCloseAddLocationForm}
+          onSave={handleSaveLocation}
+          initialCoordinates={pendingCoordinates || undefined}
+        />
       </div>
     </div>
   );
