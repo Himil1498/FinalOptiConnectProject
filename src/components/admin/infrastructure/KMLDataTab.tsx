@@ -10,8 +10,12 @@ interface KMLDataTabProps {
   isDark: boolean;
   map?: google.maps.Map | null;
   isSelectingLocation: boolean;
+  showPOPData: boolean;
+  showSubPOPData: boolean;
   onKmlTypeFilterChange: (filter: 'all' | 'pop' | 'subPop') => void;
   onKmlSearchChange: (search: string) => void;
+  onTogglePOPData: (show: boolean) => void;
+  onToggleSubPOPData: (show: boolean) => void;
   onExportData: () => void;
   onViewLocationOnMap: (item: any) => void;
   onViewDetails: (item: any) => void;
@@ -31,8 +35,12 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
   isDark,
   map,
   isSelectingLocation,
+  showPOPData,
+  showSubPOPData,
   onKmlTypeFilterChange,
   onKmlSearchChange,
+  onTogglePOPData,
+  onToggleSubPOPData,
   onExportData,
   onViewLocationOnMap,
   onViewDetails,
@@ -136,6 +144,167 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Map Layer Controls */}
+      <div className={`p-6 rounded-lg border ${
+        isDark ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+      }`}>
+        <h4 className={`text-lg font-semibold mb-4 ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}>
+          🗺️ Map Layer Visibility
+        </h4>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* POP Layer Toggle */}
+          <div className={`p-4 rounded-lg border transition-all duration-200 ${
+            showPOPData
+              ? isDark
+                ? 'bg-blue-900/30 border-blue-700'
+                : 'bg-blue-100 border-blue-300'
+              : isDark
+                ? 'bg-gray-700 border-gray-600'
+                : 'bg-white border-gray-200'
+          }`}>
+            <label className="flex items-start cursor-pointer group">
+              <div className="flex items-center">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showPOPData}
+                    onChange={(e) => onTogglePOPData(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className={`relative w-11 h-6 rounded-full transition-all duration-300 peer-focus:outline-none peer-focus:ring-4 ${
+                    isDark
+                      ? 'bg-gray-600 peer-checked:bg-blue-600 peer-focus:ring-blue-800'
+                      : 'bg-gray-200 peer-checked:bg-blue-600 peer-focus:ring-blue-300'
+                  }`}>
+                    <div className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-all duration-300 ${
+                      showPOPData ? 'translate-x-full border-white' : ''
+                    }`}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ml-4 flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">📍</span>
+                    <div>
+                      <h5 className={`font-semibold ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        POP Locations
+                      </h5>
+                      <p className={`text-sm ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        Point of Presence locations
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`text-lg font-bold px-3 py-1 rounded-full ${
+                    showPOPData
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                      : isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {kmlData.filter(item => item.type === 'pop').length}
+                  </span>
+                </div>
+                {showPOPData && (
+                  <div className="flex items-center text-sm text-blue-600 dark:text-blue-400">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Active on map
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
+
+          {/* Sub POP Layer Toggle */}
+          <div className={`p-4 rounded-lg border transition-all duration-200 ${
+            showSubPOPData
+              ? isDark
+                ? 'bg-green-900/30 border-green-700'
+                : 'bg-green-100 border-green-300'
+              : isDark
+                ? 'bg-gray-700 border-gray-600'
+                : 'bg-white border-gray-200'
+          }`}>
+            <label className="flex items-start cursor-pointer group">
+              <div className="flex items-center">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showSubPOPData}
+                    onChange={(e) => onToggleSubPOPData(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className={`relative w-11 h-6 rounded-full transition-all duration-300 peer-focus:outline-none peer-focus:ring-4 ${
+                    isDark
+                      ? 'bg-gray-600 peer-checked:bg-green-600 peer-focus:ring-green-800'
+                      : 'bg-gray-200 peer-checked:bg-green-600 peer-focus:ring-green-300'
+                  }`}>
+                    <div className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-all duration-300 ${
+                      showSubPOPData ? 'translate-x-full border-white' : ''
+                    }`}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="ml-4 flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">🏢</span>
+                    <div>
+                      <h5 className={`font-semibold ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        Sub POP Locations
+                      </h5>
+                      <p className={`text-sm ${
+                        isDark ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        Sub Point of Presence locations
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`text-lg font-bold px-3 py-1 rounded-full ${
+                    showSubPOPData
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
+                      : isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {kmlData.filter(item => item.type === 'subPop').length}
+                  </span>
+                </div>
+                {showSubPOPData && (
+                  <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Active on map
+                  </div>
+                )}
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Quick Info */}
+        <div className={`mt-4 p-3 rounded-lg ${
+          isDark ? 'bg-gray-700/50' : 'bg-blue-50/50'
+        }`}>
+          <p className={`text-sm ${
+            isDark ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            💡 <strong>Tip:</strong> Toggle these switches to show or hide POP and Sub POP locations on the map.
+            The count shows how many locations of each type are available in your data.
+          </p>
         </div>
       </div>
 
