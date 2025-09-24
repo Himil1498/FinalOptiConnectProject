@@ -229,6 +229,9 @@ const EnhancedStreetViewModal: React.FC<{
       markersRef.current = [];
       polylinesRef.current = [];
     };
+    } catch (error) {
+      console.error('Error initializing Street View:', error);
+    }
   }, [isOpen, centerPoint, points, lines]);
 
   if (!isOpen) return null;
