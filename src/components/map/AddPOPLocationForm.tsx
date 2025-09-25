@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
+import { validateGeofence } from '../../utils/unifiedGeofencing';
 
 export interface POPLocationData {
   id?: string;
@@ -143,7 +144,7 @@ const AddPOPLocationForm: React.FC<AddPOPLocationFormProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -154,6 +155,13 @@ const AddPOPLocationForm: React.FC<AddPOPLocationFormProps> = ({
 
     if (!formData.coordinates.lat || !formData.coordinates.lng) {
       alert('Valid coordinates are required');
+      return;
+    }
+
+    // Geofencing validation
+    const validation = await validateGeofence(formData.coordinates.lat, formData.coordinates.lng);
+    if (!validation.isValid) {
+      alert(`Location Error: ${validation.message}\n\nPOP locations can only be added within India boundaries.`);
       return;
     }
 

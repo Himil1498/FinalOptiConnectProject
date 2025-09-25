@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
-import { convertMapTypeIdToString } from '../../utils/mapRestrictions';
+import { convertMapTypeIdToString } from '../../utils/unifiedGeofencing';
 import { Wrapper } from '@googlemaps/react-wrapper';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
@@ -14,7 +14,7 @@ import {
 import MapControlPanel from './MapControlPanel';
 import CoordinateDisplayWidget from './CoordinateDisplayWidget';
 import MapTypeSelector from './MapTypeSelector';
-import { convertStringToMapTypeId } from '../../utils/mapRestrictions';
+import { convertStringToMapTypeId } from '../../utils/unifiedGeofencing';
 
 interface EnhancedGoogleMapProps {
   center: google.maps.LatLngLiteral;

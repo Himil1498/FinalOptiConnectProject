@@ -282,6 +282,19 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  // Extended fields for enhanced user management
+  employeeId?: string;
+  gender?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    pinCode: string;
+  };
+  supervisorName?: string;
+  officeLocation?: string;
+  profilePicture?: File | null;
+  reportingManagers?: string[];
 }
 
 export interface LoginCredentials {

@@ -6,6 +6,7 @@ import LoginForm from './components/auth/LoginForm';
 import Dashboard from './pages/Dashboard';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { AdminPage } from './pages/AdminPage';
+import Users from './pages/Users';
 import BaseMapPage from './pages/BaseMapPage';
 import { useAuth } from './hooks/useAuth';
 
@@ -44,6 +45,12 @@ const AppContent: React.FC = () => {
         path="/admin"
         element={
           isAuthenticated ? <AdminPage /> : <Navigate to="/login" replace />
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          isAuthenticated ? <Users /> : <Navigate to="/login" replace />
         }
       />
       <Route

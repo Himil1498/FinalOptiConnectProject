@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { useKMLLayers, KMLLayerConfig } from '../../hooks/useKMLLayers';
 import AddPOPLocationForm, { POPLocationData } from './AddPOPLocationForm';
+import { validateGeofence } from '../../utils/unifiedGeofencing';
 
 interface KMLLayerManagerProps {
   map: google.maps.Map | null;
@@ -66,17 +67,44 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
 
     setIsSelectingLocation(true);
 
-    // Add click listener to map
-    const listener = map.addListener('click', (event: google.maps.MapMouseEvent) => {
+    // Add click listener to map with geofencing validation
+    const listener = map.addListener('click', async (event: google.maps.MapMouseEvent) => {
       if (event.latLng) {
-        const coordinates = {
-          lat: event.latLng.lat(),
-          lng: event.latLng.lng()
-        };
+        const lat = event.latLng.lat();
+        const lng = event.latLng.lng();
 
+        console.log('🎯 KML Manager - Map clicked', { lat, lng });
+
+        // Validate coordinates are within India - STRICT ENFORCEMENT
+        const validation = await validateGeofence(lat, lng);
+        if (!validation.isValid) {
+          const notificationEvent = new CustomEvent("showNotification", {
+            detail: {
+              type: "error",
+              title: "Access Restricted",
+              message: validation.message || "KML location selection can only be used within India boundaries.",
+              duration: 5000
+            }
+          });
+          window.dispatchEvent(notificationEvent);
+          return; // BLOCK location selection outside India
+        }
+
+        const coordinates = { lat, lng };
         setPendingCoordinates(coordinates);
         setShowAddForm(true);
         setIsSelectingLocation(false);
+
+        // Show success notification
+        const successEvent = new CustomEvent('showNotification', {
+          detail: {
+            type: 'success',
+            title: 'Location Selected',
+            message: `Location selected within India boundaries`,
+            duration: 2000
+          }
+        });
+        window.dispatchEvent(successEvent);
 
         // Remove the click listener
         if (mapClickListener) {

@@ -1,0 +1,1 @@
+console.log('Testing Delhi coordinates...'); import('./src/utils/unifiedGeofencing.js').then(module => { module.validateGeofence(28.6139, 77.2090).then(result => console.log('Delhi result:', result)); });

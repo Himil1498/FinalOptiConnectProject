@@ -3,6 +3,7 @@ import BaseMap from "./BaseMap";
 import BaseMapProvider, { useBaseMap } from "./BaseMapProvider";
 import DistanceMeasurementTool from "./DistanceMeasurementTool";
 import { Coordinates } from "../../types";
+import { validateGeofence } from '../../utils/unifiedGeofencing';
 
 interface MapMarkerProps {
   position: google.maps.LatLngLiteral;
@@ -46,22 +47,39 @@ const BaseMapContent: React.FC = () => {
     setIsDistanceMeasuring(prev => !prev);
   }, []);
 
-  // Handle map clicks
-  const handleMapClick = useCallback((coordinates: Coordinates) => {
+  // Handle map clicks with geofencing validation
+  const handleMapClick = useCallback(async (coordinates: Coordinates) => {
     // If distance tool is active, let it handle clicks
     if (isDistanceMeasuring) {
       return;
     }
 
+    console.log('🎯 Base Map Example - Map clicked', coordinates);
+
+    // Validate coordinates are within India - STRICT ENFORCEMENT
+    const validation = await validateGeofence(coordinates.lat, coordinates.lng);
+    if (!validation.isValid) {
+      const notificationEvent = new CustomEvent("showNotification", {
+        detail: {
+          type: "error",
+          title: "Access Restricted",
+          message: validation.message || "Map interactions can only be used within India boundaries.",
+          duration: 5000
+        }
+      });
+      window.dispatchEvent(notificationEvent);
+      return; // BLOCK map interaction outside India
+    }
+
     setClickedLocations(prev => [...prev, coordinates]);
 
-    // Show notification
+    // Show success notification
     const notificationEvent = new CustomEvent('showNotification', {
       detail: {
-        type: 'info',
-        title: 'Location Clicked',
+        type: 'success',
+        title: 'Location Added',
         message: `Lat: ${coordinates.lat.toFixed(6)}, Lng: ${coordinates.lng.toFixed(6)}`,
-        duration: 3000
+        duration: 2000
       }
     });
     window.dispatchEvent(notificationEvent);

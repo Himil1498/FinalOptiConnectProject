@@ -42,8 +42,7 @@ const InfrastructureDataManagement: React.FC<
   map,
   onLocationAdd
 }) => {
-  const { uiState, addNotification } = useTheme();
-  const isDark = uiState.theme.mode === "dark";
+  const { addNotification } = useTheme();
 
   // Use our custom hook for infrastructure data management
   const infrastructureHook = useInfrastructureData();
@@ -943,23 +942,15 @@ ${items.map(item => `    <Placemark>
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div
-        className={`w-full max-w-7xl h-full max-h-[90vh] rounded-lg shadow-xl overflow-auto toolbox-scrollbar ${
-          isDark ? "bg-gray-900" : "bg-white"
-        }`}
+        className="w-full max-w-7xl h-full max-h-[90vh] rounded-lg shadow-xl overflow-auto toolbox-scrollbar bg-white"
       >
         {/* Header */}
         <div
-          className={`px-6 py-4 border-b flex items-center justify-between ${
-            isDark ? "border-gray-700 bg-gray-800" : "border-gray-200"
-          }`}
+          className="px-6 py-4 border-b flex items-center justify-between border-gray-200"
         >
           <div className="flex items-center space-x-3">
             <div
-              className={`p-2 rounded-lg ${
-                isDark
-                  ? "bg-blue-900/50 text-blue-400"
-                  : "bg-blue-100 text-blue-600"
-              }`}
+              className="p-2 rounded-lg bg-blue-100 text-blue-600"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -972,14 +963,14 @@ ${items.map(item => `    <Placemark>
             <div>
               <h2
                 className={`text-xl font-semibold ${
-                  isDark ? "text-white" : "text-gray-900"
+                  "text-gray-900"
                 }`}
               >
                 Infrastructure Data Management
               </h2>
               <p
                 className={`text-sm ${
-                  isDark ? "text-gray-400" : "text-gray-500"
+                  "text-gray-500"
                 }`}
               >
                 📋 Manage telecom infrastructure with manual entry, coordinate
@@ -989,11 +980,7 @@ ${items.map(item => `    <Placemark>
           </div>
           <button
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${
-              isDark
-                ? "text-gray-400 hover:text-white hover:bg-gray-700"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-            }`}
+            className="p-2 rounded-lg transition-colors text-gray-500 hover:text-gray-700 hover:bg-gray-100"
           >
             <svg
               className="w-6 h-6"
@@ -1013,9 +1000,7 @@ ${items.map(item => `    <Placemark>
 
         {/* Tabs */}
         <div
-          className={`px-6 border-b ${
-            isDark ? "border-gray-700" : "border-gray-200"
-          }`}
+          className="px-6 border-b border-gray-200"
         >
           <nav className="flex space-x-8">
             {tabs.map((tab) => (
@@ -1024,11 +1009,7 @@ ${items.map(item => `    <Placemark>
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
-                    ? isDark
-                      ? "border-blue-400 text-blue-400"
-                      : "border-blue-500 text-blue-600"
-                    : isDark
-                    ? "border-transparent text-gray-400 hover:text-gray-200"
+                    ? "border-blue-500 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 }`}
               >
@@ -1096,15 +1077,15 @@ ${items.map(item => `    <Placemark>
           {activeTab === "categories" && (
             <InfrastructureCategoriesTab
               categories={categories}
-              isDark={isDark}
+              isDark={false}
             />
           )}
 
           {/* Reports Tab */}
           {activeTab === "reports" && (
             <InfrastructureReportsTab
-              isDark={isDark}
               dataLength={allData.length}
+              isDark={false}
             />
           )}
 
@@ -1116,7 +1097,6 @@ ${items.map(item => `    <Placemark>
               manuallyAddedData={manuallyAddedData}
               kmlTypeFilter={kmlTypeFilter}
               kmlSearchTerm={kmlSearchTerm}
-              isDark={isDark}
               map={map}
               isSelectingLocation={isSelectingLocation}
               showPOPData={showPOPData}
@@ -1138,6 +1118,7 @@ ${items.map(item => `    <Placemark>
               onAddManually={handleAddManually}
               onCancelLocationSelection={handleCancelLocationSelection}
               highlightSearchTerm={highlightSearchTerm}
+              isDark={false}
             />
           )}
         </div>
@@ -1149,6 +1130,67 @@ ${items.map(item => `    <Placemark>
           onSave={handleSaveLocation}
           initialCoordinates={pendingCoordinates || undefined}
         />
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="px-6 py-4 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">Location Details</h3>
+              </div>
+              <div className="px-6 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Name</label>
+                    <p className="text-sm text-gray-900">{selectedItem.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Type</label>
+                    <p className="text-sm text-gray-900">{selectedItem.type || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Latitude</label>
+                    <p className="text-sm text-gray-900">{selectedItem.latitude || selectedItem.lat || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Longitude</label>
+                    <p className="text-sm text-gray-900">{selectedItem.longitude || selectedItem.lng || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Description</label>
+                    <p className="text-sm text-gray-900">{selectedItem.description || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Status</label>
+                    <p className="text-sm text-gray-900">{selectedItem.status || 'Active'}</p>
+                  </div>
+                </div>
+                {selectedItem.properties && (
+                  <div className="mt-4">
+                    <label className="text-sm font-medium text-gray-700">Additional Properties</label>
+                    <pre className="mt-1 text-xs bg-gray-100 p-2 rounded overflow-auto">
+                      {JSON.stringify(selectedItem.properties, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+              <div className="px-6 py-4 border-t bg-gray-50 flex justify-end space-x-2">
+                <button
+                  onClick={() => handleViewLocationOnMap(selectedItem)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                >
+                  View on Map
+                </button>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Export Format Modal */}
         {showExportFormatModal && (

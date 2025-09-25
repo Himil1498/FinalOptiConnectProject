@@ -9,6 +9,7 @@ interface MapToolsPanelExtendedProps extends MapToolsPanelProps {
   onMapTypeChange: (mapType: string) => void;
   multiToolMode: boolean;
   onMultiToolToggle: () => void;
+  showStreetView: boolean;
 }
 
 const MapToolsPanel: React.FC<MapToolsPanelExtendedProps> = ({
@@ -27,6 +28,7 @@ const MapToolsPanel: React.FC<MapToolsPanelExtendedProps> = ({
   showLayoutManager,
   showWorkflowPresets,
   showKMLLayers,
+  showStreetView,
   onToolActivation,
   onTogglePanel,
   mapInstance,
@@ -63,6 +65,7 @@ const MapToolsPanel: React.FC<MapToolsPanelExtendedProps> = ({
         showLayoutManager={showLayoutManager}
         showWorkflowPresets={showWorkflowPresets}
         showKMLLayers={showKMLLayers}
+        showStreetView={showStreetView}
         onToolActivation={onToolActivation}
         onTogglePanel={onTogglePanel}
       />

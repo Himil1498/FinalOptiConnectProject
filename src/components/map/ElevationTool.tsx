@@ -18,7 +18,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { validateIndiaGeofencePrecise } from "../../utils/preciseIndiaGeofencing";
+import { validateGeofence } from "../../utils/unifiedGeofencing";
 import ToolboxContainer from "../common/ToolboxContainer";
 import StandardDialog from "../common/StandardDialog";
 import { Z_INDEX } from "../../constants/zIndex";
@@ -596,7 +596,7 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
 
       try {
         // Strict validation for India boundaries
-        const validation = await validateIndiaGeofencePrecise(lat, lng, {
+        const validation = await validateGeofence(lat, lng, {
           strictMode: true,
           showWarnings: true,
           allowNearBorder: false,
@@ -604,11 +604,10 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
         });
 
         if (!validation.isValid) {
-          // Show warning but continue tool usage
           const notificationEvent = new CustomEvent("showNotification", {
             detail: {
-              type: "warning",
-              title: "Location Outside India Boundaries",
+              type: "error",
+              title: "Access Restricted",
               message: `${validation.message} ${
                 validation.suggestedAction || ""
               }`,
@@ -616,7 +615,7 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
             }
           });
           window.dispatchEvent(notificationEvent);
-          // Continue with elevation query (don't return early)
+          return; // BLOCK elevation tool usage outside India
         }
       } catch (error) {
         console.error("Error validating geographic boundaries:", error);
@@ -708,7 +707,7 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
 
       try {
         // Strict validation for India boundaries
-        const validation = await validateIndiaGeofencePrecise(lat, lng, {
+        const validation = await validateGeofence(lat, lng, {
           strictMode: true,
           showWarnings: true,
           allowNearBorder: false,
@@ -716,11 +715,10 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
         });
 
         if (!validation.isValid) {
-          // Show warning but continue tool usage
           const notificationEvent = new CustomEvent("showNotification", {
             detail: {
-              type: "warning",
-              title: "Location Outside India Boundaries",
+              type: "error",
+              title: "Access Restricted",
               message: `${validation.message} ${
                 validation.suggestedAction || ""
               }`,
@@ -728,7 +726,7 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
             }
           });
           window.dispatchEvent(notificationEvent);
-          // Continue with elevation query (don't return early)
+          return; // BLOCK elevation tool usage outside India
         }
       } catch (error) {
         console.error("Error validating geographic boundaries:", error);

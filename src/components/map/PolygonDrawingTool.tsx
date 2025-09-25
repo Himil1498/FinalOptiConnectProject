@@ -6,10 +6,10 @@ import React, {
   useEffect
 } from "react";
 import {
-  validateIndiaGeofencePrecise,
-  validateMultipleCoordinatesPrecise,
-  preloadIndiaBoundaryData
-} from "../../utils/preciseIndiaGeofencing";
+  validateGeofence,
+  validateMultipleCoordinates,
+  preloadGeofenceData
+} from "../../utils/unifiedGeofencing";
 import { ConfirmDialog } from "../common/StandardDialog";
 import { Z_INDEX } from "../../constants/zIndex";
 import { LAYOUT_DIMENSIONS, TOOLBOX_POSITIONING } from "../../constants/layout";
@@ -341,15 +341,14 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
       const y = event.clientY - rect.top;
       const { lat, lng } = pixelToLatLng(x, y);
 
-      // Validate coordinates are within India
-      const validation = await validateIndiaGeofencePrecise(lat, lng);
+      // Validate coordinates are within India - STRICT ENFORCEMENT
+      const validation = await validateGeofence(lat, lng);
       if (!validation.isValid) {
-        // Show warning but continue polygon creation
         const event = new CustomEvent("showNotification", {
           detail: {
-            type: "warning",
-            title: "Location Outside India Boundaries",
-            message: validation.message,
+            type: "error",
+            title: "Access Restricted",
+            message: validation.message || "Polygon drawing can only be used within India boundaries.",
             duration: 6000
           }
         });
@@ -368,7 +367,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
             window.dispatchEvent(suggestionEvent);
           }, 1000);
         }
-        // Continue with vertex creation (don't return early)
+        return; // BLOCK polygon creation outside India
       }
 
       const newVertex: Vertex = {
@@ -423,7 +422,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
 
       try {
         // Strict validation for India boundaries
-        const validation = await validateIndiaGeofencePrecise(lat, lng, {
+        const validation = await validateGeofence(lat, lng, {
           strictMode: true,
           showWarnings: true,
           allowNearBorder: false,
@@ -431,11 +430,10 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
         });
 
         if (!validation.isValid) {
-          // Show warning but continue tool usage
           const notificationEvent = new CustomEvent("showNotification", {
             detail: {
-              type: "warning",
-              title: "Location Outside India Boundaries",
+              type: "error",
+              title: "Access Restricted",
               message: `${validation.message} ${
                 validation.suggestedAction || ""
               }`,
@@ -443,7 +441,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
             }
           });
           window.dispatchEvent(notificationEvent);
-          // Continue with vertex creation (don't return early)
+          return; // BLOCK tool usage outside India
         }
       } catch (error) {
         console.error("Error validating geographic boundaries:", error);
@@ -490,7 +488,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
       lat: vertex.lat,
       lng: vertex.lng
     }));
-    const validation = await validateMultipleCoordinatesPrecise(coordinates);
+    const validation = await validateMultipleCoordinates(coordinates);
 
     if (!validation.isValid) {
       const event = new CustomEvent("showNotification", {

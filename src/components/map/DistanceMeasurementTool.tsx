@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { validateIndiaGeofence } from "../../utils/indiaGeofencing";
+import { validateGeofence } from "../../utils/unifiedGeofencing";
 import { Z_INDEX } from "../../constants/zIndex";
 import { TOOLBOX_POSITIONING } from "../../constants/layout";
 import StandardDialog, { ConfirmDialog } from "../common/StandardDialog";
@@ -404,23 +404,24 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
   useEffect(() => {
     if (!map || !isActive) return;
 
-    const handleGoogleMapClick = (event: google.maps.MapMouseEvent) => {
+    const handleGoogleMapClick = async (event: google.maps.MapMouseEvent) => {
       if (!event.latLng) return;
 
       const lat = event.latLng.lat();
       const lng = event.latLng.lng();
 
-      const validation = validateIndiaGeofence(lat, lng);
+      const validation = await validateGeofence(lat, lng);
       if (!validation.isValid) {
         const notificationEvent = new CustomEvent("showNotification", {
           detail: {
-            type: "warning",
-            title: "Location Outside India Boundaries",
-            message: validation.message,
+            type: "error",
+            title: "Access Restricted",
+            message: validation.message || "Tools can only be used within India boundaries.",
             duration: 5000
           }
         });
         window.dispatchEvent(notificationEvent);
+        return; // BLOCK further execution
       }
 
       const { x, y } = latLngToPixel(lat, lng);
@@ -451,7 +452,7 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
 
   // Handle map click to add points
   const handleMapClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
+    async (event: React.MouseEvent<HTMLDivElement>) => {
       if (!isActive) return;
 
       const rect = event.currentTarget.getBoundingClientRect();
@@ -459,17 +460,18 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
       const y = event.clientY - rect.top;
       const { lat, lng } = pixelToLatLng(x, y);
 
-      const validation = validateIndiaGeofence(lat, lng);
+      const validation = await validateGeofence(lat, lng);
       if (!validation.isValid) {
-        const event = new CustomEvent("showNotification", {
+        const notificationEvent = new CustomEvent("showNotification", {
           detail: {
-            type: "warning",
-            title: "Location Outside India Boundaries",
-            message: validation.message,
+            type: "error",
+            title: "Access Restricted",
+            message: validation.message || "Tools can only be used within India boundaries.",
             duration: 5000
           }
         });
-        window.dispatchEvent(event);
+        window.dispatchEvent(notificationEvent);
+        return; // BLOCK further execution
       }
 
       const newPoint: Point = {

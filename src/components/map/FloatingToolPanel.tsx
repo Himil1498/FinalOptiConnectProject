@@ -39,6 +39,7 @@ interface FloatingToolPanelProps {
   showLayoutManager: boolean;
   showWorkflowPresets: boolean;
   showKMLLayers: boolean;
+  showStreetView: boolean;
 
   // Handlers
   onToolActivation: (toolName: string) => void;
@@ -61,6 +62,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   showLayoutManager,
   showWorkflowPresets,
   showKMLLayers,
+  showStreetView,
   onToolActivation,
   onTogglePanel,
 }) => {
@@ -165,6 +167,15 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
       color: 'purple',
       iconColor: 'text-purple-600',
       onClick: () => handleToolActivation('elevation')
+    },
+    {
+      id: 'streetview',
+      icon: '🏙️',
+      label: 'Street View',
+      isActive: showStreetView,
+      color: 'orange',
+      iconColor: 'text-orange-600',
+      onClick: () => onTogglePanel('streetview')
     }
   ];
 
