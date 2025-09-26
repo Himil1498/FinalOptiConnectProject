@@ -15,7 +15,7 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
   onDataManagerOpen,
   onSearchOpen
 }) => {
-  const { registerShortcut, unregisterShortcut, toggleTheme, toggleSidebar, addNotification } = useTheme();
+  const { registerShortcut, unregisterShortcut, toggleSidebar, addNotification } = useTheme();
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 
   // Use refs to store stable references for functions
@@ -46,22 +46,6 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
       category: 'navigation' | 'search' | 'tools' | 'data' | 'general';
       enabled: boolean;
     }> = [
-      {
-        id: 'toggle-theme',
-        key: 't',
-        ctrlKey: true,
-        description: 'Toggle theme (Ctrl+T)',
-        category: 'general',
-        enabled: true,
-        action: () => {
-          toggleTheme();
-          addNotification({
-            type: 'info',
-            message: 'Theme toggled',
-            duration: 2000
-          });
-        }
-      },
       {
         id: 'toggle-sidebar',
         key: 'b',
@@ -359,10 +343,6 @@ const KeyboardShortcuts: React.FC<KeyboardShortcutsProps> = ({
               ⚙️ General
             </h3>
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Toggle theme</span>
-                <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Ctrl+T</kbd>
-              </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Show shortcuts</span>
                 <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-mono">?</kbd>

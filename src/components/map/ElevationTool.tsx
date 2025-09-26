@@ -24,6 +24,7 @@ import StandardDialog from "../common/StandardDialog";
 import { Z_INDEX } from "../../constants/zIndex";
 import { LAYOUT_DIMENSIONS, TOOLBOX_POSITIONING } from "../../constants/layout";
 import { useStackedToolboxPositioning } from "../../hooks/useStackedToolboxPositioning";
+import { useDataStore } from "../../contexts/DataStoreContext";
 import {
   useNavbarHeight,
   useFooterHeight,
@@ -216,6 +217,9 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
   const navbarHeight = useNavbarHeight();
   const footerHeight = useFooterHeight();
   const chartRef = useRef<HTMLCanvasElement>(null);
+
+  // DataStore hook for saving to global data manager
+  const { saveData } = useDataStore();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   // Notify parent when data changes
@@ -1043,7 +1047,7 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
   };
 
   // Save current elevation profile
-  const saveProfile = useCallback(() => {
+  const saveProfile = useCallback(async () => {
     if (elevationPoints.length < 2) {
       const notificationEvent = new CustomEvent("showNotification", {
         detail: {
@@ -1092,6 +1096,50 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
       setSavedProfiles((prev) => [...prev, savedProfile]);
     }
 
+    // Also save to global DataStore for Data Manager integration
+    try {
+      const totalDistance = elevationProfile.totalDistance || 0;
+      const elevationGain = elevationProfile.elevationGain || 0;
+      const elevationLoss = elevationProfile.elevationLoss || 0;
+      const maxElevation = Math.max(...elevationPoints.map(p => p.elevation));
+      const minElevation = Math.min(...elevationPoints.map(p => p.elevation));
+
+      await saveData({
+        name: profileName,
+        type: 'elevation',
+        description: profileNotes || `Elevation profile with ${elevationPoints.length} points`,
+        category: 'Elevation Profiles',
+        tags: ['elevation', 'profile', 'manual'],
+        data: {
+          points: elevationPoints.map((point, index) => ({
+            lat: point.lat,
+            lng: point.lng,
+            elevation: point.elevation,
+            index
+          })),
+          totalDistance,
+          elevationGain,
+          elevationLoss,
+          maxElevation,
+          minElevation,
+          averageGrade: totalDistance > 0 ? (elevationGain - elevationLoss) / totalDistance * 100 : 0,
+          unit: unit === 'meters' ? 'km' : 'miles'
+        }
+      });
+    } catch (error) {
+      console.error('Failed to save elevation profile to DataStore:', error);
+      // Show warning but don't prevent local save
+      const errorEvent = new CustomEvent("showNotification", {
+        detail: {
+          type: "warning",
+          title: "Data Manager Save Failed",
+          message: "Elevation profile saved locally but failed to save to Data Manager.",
+          duration: 4000
+        }
+      });
+      window.dispatchEvent(errorEvent);
+    }
+
     setShowSaveDialog(false);
     setProfileName("");
     setProfileNotes("");
@@ -1115,7 +1163,8 @@ const ElevationTool: React.FC<ElevationToolProps> = ({
     profileNotes,
     unit,
     editingProfileId,
-    savedProfiles
+    savedProfiles,
+    saveData
   ]);
 
   // Load saved elevation profile

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MagnifyingGlassIcon,
   UsersIcon,
@@ -14,10 +15,15 @@ import {
   WrenchScrewdriverIcon,
   CubeIcon,
   MapPinIcon
-} from '@heroicons/react/24/outline';
-import { useFullscreen } from '../../hooks/useFullscreen';
-import { themeClasses, buttonVariants, focusStyles, componentPatterns } from '../../utils/lightThemeHelper';
-import SimpleTooltip from '../common/SimpleTooltip';
+} from "@heroicons/react/24/outline";
+import { useFullscreen } from "../../hooks/useFullscreen";
+import {
+  themeClasses,
+  buttonVariants,
+  focusStyles,
+  componentPatterns
+} from "../../utils/lightThemeHelper";
+import SimpleTooltip from "../common/SimpleTooltip";
 
 interface FloatingToolPanelProps {
   user: any;
@@ -62,12 +68,13 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   showWorkflowPresets,
   showKMLLayers,
   onToolActivation,
-  onTogglePanel,
+  onTogglePanel
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isFullscreen } = useFullscreen();
+  const navigate = useNavigate();
 
   // Detect sidebar collapse state
   useEffect(() => {
@@ -113,8 +120,8 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
 
   // Simple tool activation without multi-tool functionality
   const handleToolActivation = (toolId: string) => {
-    if (toolId === 'search') {
-      onTogglePanel('search');
+    if (toolId === "search") {
+      onTogglePanel("search");
     } else {
       onToolActivation(toolId);
     }
@@ -122,129 +129,101 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
 
   const tools = [
     {
-      id: 'workflow',
-      icon: '🚀',
-      label: 'Workflows',
+      id: "workflow",
+      icon: "🚀",
+      label: "Workflows",
       isActive: showWorkflowPresets,
-      color: 'indigo',
-      iconColor: 'text-indigo-600',
-      onClick: () => onTogglePanel('workflow')
+      color: "indigo",
+      iconColor: "text-indigo-600",
+      onClick: () => onTogglePanel("workflow")
     },
     {
-      id: 'search',
+      id: "search",
       icon: MagnifyingGlassIcon,
-      label: 'Search',
+      label: "Search",
       isActive: showSearchSystem, // Use actual tool state
-      color: 'cyan',
-      iconColor: 'text-cyan-600',
-      onClick: () => handleToolActivation('search')
+      color: "cyan",
+      iconColor: "text-cyan-600",
+      onClick: () => handleToolActivation("search")
     },
     {
-      id: 'distance',
-      icon: '📏',
-      label: 'Distance',
+      id: "distance",
+      icon: "📏",
+      label: "Distance",
       isActive: isDistanceMeasuring, // Use actual tool state
-      color: 'blue',
-      iconColor: 'text-blue-600',
-      onClick: () => handleToolActivation('distance')
+      color: "blue",
+      iconColor: "text-blue-600",
+      onClick: () => handleToolActivation("distance")
     },
     {
-      id: 'polygon',
-      icon: '🔺',
-      label: 'Polygon',
+      id: "polygon",
+      icon: "🔺",
+      label: "Polygon",
       isActive: isPolygonDrawing, // Use actual tool state
-      color: 'green',
-      iconColor: 'text-green-600',
-      onClick: () => handleToolActivation('polygon')
+      color: "green",
+      iconColor: "text-green-600",
+      onClick: () => handleToolActivation("polygon")
     },
     {
-      id: 'elevation',
-      icon: '⛰️',
-      label: 'Elevation',
+      id: "elevation",
+      icon: "⛰️",
+      label: "Elevation",
       isActive: isElevationActive, // Use actual tool state
-      color: 'purple',
-      iconColor: 'text-purple-600',
-      onClick: () => handleToolActivation('elevation')
+      color: "purple",
+      iconColor: "text-purple-600",
+      onClick: () => handleToolActivation("elevation")
     }
   ];
 
   const adminTools = [
     {
-      id: 'region',
-      icon: MapIcon,
-      label: 'Regions',
-      isActive: showRegionPanel,
-      color: 'blue',
-      iconColor: 'text-blue-600',
-      onClick: () => onTogglePanel('region')
-    },
-    {
-      id: 'users',
+      id: "users",
       icon: UsersIcon,
-      label: 'Users',
+      label: "Users",
       isActive: showUserGroupsPanel,
-      color: 'indigo',
-      iconColor: 'text-indigo-600',
-      onClick: () => onTogglePanel('users')
-    }
-  ];
-
-  const managerTools = [
-    {
-      id: 'dashboard',
-      icon: ChartBarIcon,
-      label: 'Dashboard',
-      isActive: showManagerDashboard,
-      color: 'emerald',
-      iconColor: 'text-emerald-600',
-      onClick: () => onTogglePanel('dashboard')
-    },
-    {
-      id: 'import',
-      icon: ArrowUpTrayIcon,
-      label: 'Import',
-      isActive: showDataImport,
-      color: 'orange',
-      iconColor: 'text-orange-600',
-      onClick: () => onTogglePanel('import')
+      color: "indigo",
+      iconColor: "text-indigo-600",
+      onClick: () => navigate("/users")
     }
   ];
 
   const dataTools = [
     {
-      id: 'infrastructure',
+      id: "infrastructure",
       icon: BuildingOfficeIcon,
-      label: 'Infrastructure',
+      label: "Infrastructure",
       isActive: showInfrastructureData,
-      color: 'teal',
-      iconColor: 'text-teal-600',
-      onClick: () => onTogglePanel('infrastructure')
+      color: "teal",
+      iconColor: "text-teal-600",
+      onClick: () => onTogglePanel("infrastructure")
     },
     {
-      id: 'data',
+      id: "data",
       icon: ArchiveBoxIcon,
-      label: 'Data Manager',
+      label: "Data Manager",
       isActive: showDataManager,
-      color: 'violet',
-      iconColor: 'text-violet-600',
-      onClick: () => onTogglePanel('data')
+      color: "violet",
+      iconColor: "text-violet-600",
+      onClick: () => navigate("/data-manager")
     },
     {
-      id: 'layout',
+      id: "layout",
       icon: Bars3Icon,
-      label: 'Layout Manager',
+      label: "Layout Manager",
       isActive: showLayoutManager,
-      color: 'indigo',
-      iconColor: 'text-indigo-600',
-      onClick: () => onTogglePanel('layout')
+      color: "indigo",
+      iconColor: "text-indigo-600",
+      onClick: () => onTogglePanel("layout")
     }
   ];
 
   if (isMinimized) {
     return (
-      <div className={`fixed top-1/2 transform -translate-y-1/2 z-50 transition-all duration-300 ${
-        isFullscreen ? 'left-2' : 'left-4'
-      }`}>
+      <div
+        className={`fixed top-1/2 transform -translate-y-1/2 z-50 transition-all duration-300 ${
+          isFullscreen ? "left-2" : "left-4"
+        }`}
+      >
         <button
           onClick={() => setIsMinimized(false)}
           className={`${themeClasses.background.elevated} ${themeClasses.interactive.default}
@@ -260,13 +239,21 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   }
 
   return (
-    <div className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-50
-                    transition-all duration-300 ${isCollapsed ? 'w-12' : 'w-52'}
-                    ${isFullscreen ? '' : ''}
-                    max-w-[calc(100vw-40px)] sm:max-w-none`}>
-      <div className={`h-full bg-gradient-to-b from-white via-gray-50/98 to-gray-100/95 backdrop-blur-sm border-r-2 border-gray-200/60 shadow-2xl flex flex-col`}>
+    <div
+      className={`fixed top-16 left-0 h-[calc(100vh-4rem)] z-50
+                    transition-all duration-300 ${isCollapsed ? "w-12" : "w-52"}
+                    ${isFullscreen ? "" : ""}
+                    max-w-[calc(100vw-40px)] sm:max-w-none`}
+    >
+      <div
+        className={`h-full bg-gradient-to-b from-white via-gray-50/98 to-gray-100/95 backdrop-blur-sm border-r-2 border-gray-200/60 shadow-2xl flex flex-col`}
+      >
         {/* Header - Enhanced with better styling */}
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-3 border-b-2 border-gray-200/80 bg-gradient-to-r from-white via-gray-50 to-white shadow-sm`}>
+        <div
+          className={`flex items-center ${
+            isCollapsed ? "justify-center" : "justify-between"
+          } p-3 border-b-2 border-gray-200/80 bg-gradient-to-r from-white via-gray-50 to-white shadow-sm`}
+        >
           {!isCollapsed && (
             <h3 className={`text-sm font-bold text-gray-900 flex items-center`}>
               <Bars3Icon className="w-5 h-5 mr-2 text-indigo-600" />
@@ -275,27 +262,46 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
               </span>
             </h3>
           )}
-          <SimpleTooltip content={isCollapsed ? 'Expand Panel' : 'Collapse Panel'} position="right">
+          <SimpleTooltip
+            content={isCollapsed ? "Expand Panel" : "Collapse Panel"}
+            position="right"
+          >
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className={`relative group p-2 ${themeClasses.interactive.subtle} rounded-lg transition-all duration-300 ease-in-out ${focusStyles.default}
+              className={`relative group p-2 ${
+                themeClasses.interactive.subtle
+              } rounded-lg transition-all duration-300 ease-in-out ${
+                focusStyles.default
+              }
                          hover:scale-110 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:shadow-lg hover:border-blue-200 border border-transparent active:scale-95
-                         ${isCollapsed ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' : ''}`}
+                         ${
+                           isCollapsed
+                             ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
+                             : ""
+                         }`}
             >
               {/* Animated background glow */}
-              <div className={`absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${isCollapsed ? 'opacity-10' : ''}`}></div>
+              <div
+                className={`absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 ${
+                  isCollapsed ? "opacity-10" : ""
+                }`}
+              ></div>
 
               {/* Icon container with enhanced styling */}
               <div className="relative flex items-center justify-center">
                 {isCollapsed ? (
                   <div className="flex items-center">
-                    <ChevronRightIcon className={`h-4 w-4 ${themeClasses.text.tertiary} group-hover:text-blue-600 transition-colors duration-200`} />
+                    <ChevronRightIcon
+                      className={`h-4 w-4 ${themeClasses.text.tertiary} group-hover:text-blue-600 transition-colors duration-200`}
+                    />
                     <div className="ml-1 w-1 h-4 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-200"></div>
                   </div>
                 ) : (
                   <div className="flex items-center">
                     <div className="mr-1 w-1 h-4 bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full opacity-60 group-hover:opacity-100 transition-opacity duration-200"></div>
-                    <ChevronLeftIcon className={`h-4 w-4 ${themeClasses.text.tertiary} group-hover:text-blue-600 transition-colors duration-200`} />
+                    <ChevronLeftIcon
+                      className={`h-4 w-4 ${themeClasses.text.tertiary} group-hover:text-blue-600 transition-colors duration-200`}
+                    />
                   </div>
                 )}
               </div>
@@ -309,11 +315,17 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
         </div>
 
         {/* Tools Grid */}
-        <div className={`flex-1 overflow-y-auto p-2 space-y-3 ${isCollapsed ? 'scrollbar-hide' : 'custom-scrollbar'}`}>
+        <div
+          className={`flex-1 overflow-y-auto p-2 space-y-3 ${
+            isCollapsed ? "scrollbar-hide" : "custom-scrollbar"
+          }`}
+        >
           {/* Core Tools Section */}
           {!isCollapsed && (
             <div className="mb-1">
-              <h4 className={`text-xs font-bold text-blue-700 uppercase tracking-wider mb-1 flex items-center`}>
+              <h4
+                className={`text-xs font-bold text-blue-700 uppercase tracking-wider mb-1 flex items-center`}
+              >
                 <MapIcon className="w-4 h-4 mr-1.5" />
                 <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   Map Tools
@@ -321,29 +333,56 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
               </h4>
             </div>
           )}
-          <div className={`grid gap-1 ${isCollapsed ? 'grid-cols-1' : 'grid-cols-1'}`}>
+          <div
+            className={`grid gap-1 ${
+              isCollapsed ? "grid-cols-1" : "grid-cols-1"
+            }`}
+          >
             {tools.map((tool) => {
               const toolButton = (
                 <button
                   key={tool.id}
                   onClick={tool.onClick}
-                  className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                            rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
+                  className={`w-full flex items-center ${
+                    isCollapsed
+                      ? "justify-center p-2"
+                      : "justify-start px-3 py-2"
+                  }
+                            rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${
+                              focusStyles.default
+                            }
                             border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
                             active:scale-95 active:translate-y-0 cursor-pointer
-                            ${tool.isActive
-                              ? `bg-gradient-to-r from-${tool.color}-500 to-${tool.color}-600 text-white shadow-xl border-${tool.color}-600 transform scale-105 shadow-${tool.color}-200`
-                              : `bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-white hover:to-gray-50 hover:text-gray-900 hover:shadow-gray-200`
+                            ${
+                              tool.isActive
+                                ? `bg-gradient-to-r from-${tool.color}-500 to-${tool.color}-600 text-white shadow-xl border-${tool.color}-600 transform scale-105 shadow-${tool.color}-200`
+                                : `bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-white hover:to-gray-50 hover:text-gray-900 hover:shadow-gray-200`
                             }`}
                 >
-                  <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
-                    {typeof tool.icon === 'string' ? (
-                      <span className={`${isCollapsed ? 'text-lg' : 'text-sm'}`}>{tool.icon}</span>
+                  <div
+                    className={`${
+                      isCollapsed ? "flex justify-center" : "flex items-center"
+                    }`}
+                  >
+                    {typeof tool.icon === "string" ? (
+                      <span
+                        className={`${isCollapsed ? "text-lg" : "text-sm"}`}
+                      >
+                        {tool.icon}
+                      </span>
                     ) : (
-                      <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
+                      <tool.icon
+                        className={`${isCollapsed ? "h-6 w-6" : "h-4 w-4"} ${
+                          tool.isActive
+                            ? "text-white"
+                            : tool.iconColor || "text-gray-600"
+                        }`}
+                      />
                     )}
                   </div>
-                  {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
+                  {!isCollapsed && (
+                    <span className="ml-3 flex-1 text-left">{tool.label}</span>
+                  )}
                   {tool.isActive && !isCollapsed && (
                     <div className="ml-auto w-2 h-2 bg-white/80 rounded-full animate-pulse shadow-sm" />
                   )}
@@ -351,7 +390,11 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
               );
 
               return isCollapsed ? (
-                <SimpleTooltip key={tool.id} content={tool.label} position="right">
+                <SimpleTooltip
+                  key={tool.id}
+                  content={tool.label}
+                  position="right"
+                >
                   {toolButton}
                 </SimpleTooltip>
               ) : (
@@ -372,81 +415,64 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                     <div className="relative flex justify-center text-sm">
                       <span className="px-3 py-1 bg-white text-gray-500 rounded-full border border-indigo-200 shadow-sm">
                         <ShieldCheckIcon className="w-3 h-3 inline mr-1 text-indigo-500" />
-                        <span className="text-indigo-600 font-semibold">Admin</span>
+                        <span className="text-indigo-600 font-semibold">
+                          Admin
+                        </span>
                       </span>
                     </div>
                   </div>
                 </div>
               )}
-              <div className={`grid gap-1 ${isCollapsed ? 'grid-cols-1' : 'grid-cols-1'}`}>
+              <div
+                className={`grid gap-1 ${
+                  isCollapsed ? "grid-cols-1" : "grid-cols-1"
+                }`}
+              >
                 {adminTools.map((tool) => (
-              <button
-                key={tool.id}
-                onClick={tool.onClick}
-                className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
+                  <button
+                    key={tool.id}
+                    onClick={tool.onClick}
+                    className={`w-full flex items-center ${
+                      isCollapsed
+                        ? "justify-center p-2"
+                        : "justify-start px-3 py-2"
+                    }
+                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${
+                            focusStyles.default
+                          }
                           border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
                           active:scale-95 active:translate-y-0 cursor-pointer
-                          ${tool.isActive
-                            ? `bg-gradient-to-r from-${tool.color}-500 to-${tool.color}-600 text-white shadow-lg border-${tool.color}-600 transform scale-105`
-                            : `bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:text-gray-900`
+                          ${
+                            tool.isActive
+                              ? `bg-gradient-to-r from-${tool.color}-500 to-${tool.color}-600 text-white shadow-lg border-${tool.color}-600 transform scale-105`
+                              : `bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:text-gray-900`
                           }`}
-                title={tool.label}
-              >
-                <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
-                  <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
-                </div>
-                {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
-                {tool.isActive && !isCollapsed && (
-                  <div className="ml-auto w-2 h-2 bg-white/80 rounded-full animate-pulse shadow-sm" />
-                )}
-              </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Manager Tools Section */}
-          {(isAdmin || user?.role === 'manager') && (
-            <>
-              {!isCollapsed && (
-                <div className="mb-2">
-                  <div className="relative mb-3">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gradient border-emerald-200"></div>
+                    title={tool.label}
+                  >
+                    <div
+                      className={`${
+                        isCollapsed
+                          ? "flex justify-center"
+                          : "flex items-center"
+                      }`}
+                    >
+                      <tool.icon
+                        className={`${isCollapsed ? "h-6 w-6" : "h-4 w-4"} ${
+                          tool.isActive
+                            ? "text-white"
+                            : tool.iconColor || "text-gray-600"
+                        }`}
+                      />
                     </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-3 py-1 bg-white text-gray-500 rounded-full border border-emerald-200 shadow-sm">
-                        <WrenchScrewdriverIcon className="w-3 h-3 inline mr-1 text-emerald-500" />
-                        <span className="text-emerald-600 font-semibold">Manager</span>
+                    {!isCollapsed && (
+                      <span className="ml-3 flex-1 text-left">
+                        {tool.label}
                       </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className={`grid gap-1 ${isCollapsed ? 'grid-cols-1' : 'grid-cols-1'}`}>
-                {managerTools.map((tool) => (
-              <button
-                key={tool.id}
-                onClick={tool.onClick}
-                className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
-                          border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
-                          active:scale-95 active:translate-y-0 cursor-pointer
-                          ${tool.isActive
-                            ? `bg-gradient-to-r from-${tool.color}-500 to-${tool.color}-600 text-white shadow-lg border-${tool.color}-600 transform scale-105`
-                            : `bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:text-gray-900`
-                          }`}
-                title={tool.label}
-              >
-                <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
-                  <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
-                </div>
-                {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
-                {tool.isActive && !isCollapsed && (
-                  <div className="ml-auto w-2 h-2 bg-white/80 rounded-full animate-pulse shadow-sm" />
-                )}
-              </button>
+                    )}
+                    {tool.isActive && !isCollapsed && (
+                      <div className="ml-auto w-2 h-2 bg-white/80 rounded-full animate-pulse shadow-sm" />
+                    )}
+                  </button>
                 ))}
               </div>
             </>
@@ -463,42 +489,65 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
                   <div className="relative flex justify-center text-sm">
                     <span className="px-3 py-1 bg-white text-gray-500 rounded-full border border-violet-200 shadow-sm">
                       <CubeIcon className="w-3 h-3 inline mr-1 text-violet-500" />
-                      <span className="text-violet-600 font-semibold">Data</span>
+                      <span className="text-violet-600 font-semibold">
+                        Data
+                      </span>
                     </span>
                   </div>
                 </div>
               </div>
             )}
-            <div className={`grid gap-1 ${isCollapsed ? 'grid-cols-1' : 'grid-cols-1'}`}>
+            <div
+              className={`grid gap-1 ${
+                isCollapsed ? "grid-cols-1" : "grid-cols-1"
+              }`}
+            >
               {dataTools.map((tool) => (
-              <button
-                key={tool.id}
-                onClick={tool.onClick}
-                className={`w-full flex items-center ${isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2'}
-                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${focusStyles.default}
+                <button
+                  key={tool.id}
+                  onClick={tool.onClick}
+                  className={`w-full flex items-center ${
+                    isCollapsed
+                      ? "justify-center p-2"
+                      : "justify-start px-3 py-2"
+                  }
+                          rounded-lg transition-all duration-300 ease-in-out text-sm font-medium ${
+                            focusStyles.default
+                          }
                           border border-transparent hover:border-gray-200 hover:shadow-lg hover:scale-105 hover:-translate-y-0.5
                           active:scale-95 active:translate-y-0 cursor-pointer
-                          ${tool.isActive
-                            ? `bg-gradient-to-r from-${tool.color}-500 to-${tool.color}-600 text-white shadow-lg border-${tool.color}-600 transform scale-105`
-                            : `bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:text-gray-900`
+                          ${
+                            tool.isActive
+                              ? `bg-gradient-to-r from-${tool.color}-500 to-${tool.color}-600 text-white shadow-lg border-${tool.color}-600 transform scale-105`
+                              : `bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:text-gray-900`
                           }`}
-                title={tool.label}
-              >
-                <div className={`${isCollapsed ? 'flex justify-center' : 'flex items-center'}`}>
-                  <tool.icon className={`${isCollapsed ? 'h-6 w-6' : 'h-4 w-4'} ${tool.isActive ? 'text-white' : tool.iconColor || 'text-gray-600'}`} />
-                </div>
-                {!isCollapsed && <span className="ml-3 flex-1 text-left">{tool.label}</span>}
-                {tool.isActive && !isCollapsed && (
-                  <div className="ml-auto w-2 h-2 bg-white/80 rounded-full animate-pulse shadow-sm" />
-                )}
-              </button>
+                  title={tool.label}
+                >
+                  <div
+                    className={`${
+                      isCollapsed ? "flex justify-center" : "flex items-center"
+                    }`}
+                  >
+                    <tool.icon
+                      className={`${isCollapsed ? "h-6 w-6" : "h-4 w-4"} ${
+                        tool.isActive
+                          ? "text-white"
+                          : tool.iconColor || "text-gray-600"
+                      }`}
+                    />
+                  </div>
+                  {!isCollapsed && (
+                    <span className="ml-3 flex-1 text-left">{tool.label}</span>
+                  )}
+                  {tool.isActive && !isCollapsed && (
+                    <div className="ml-auto w-2 h-2 bg-white/80 rounded-full animate-pulse shadow-sm" />
+                  )}
+                </button>
               ))}
             </div>
           </>
         </div>
-
       </div>
-
     </div>
   );
 };

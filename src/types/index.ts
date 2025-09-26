@@ -11,7 +11,7 @@ export interface PaginationParams {
   page: number;
   limit: number;
   sort?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
 }
 
 export interface PaginatedResponse<T> {
@@ -36,10 +36,10 @@ export interface BoundingBox {
 }
 
 export interface GeoFeature {
-  type: 'Feature';
+  type: "Feature";
   properties: Record<string, any>;
   geometry: {
-    type: 'Point' | 'LineString' | 'Polygon';
+    type: "Point" | "LineString" | "Polygon";
     coordinates: number[] | number[][] | number[][][];
   };
 }
@@ -48,7 +48,7 @@ export interface GeoFeature {
 export interface LayerConfig {
   id: string;
   name: string;
-  type: 'raster' | 'vector' | 'geojson';
+  type: "raster" | "vector" | "geojson";
   url?: string;
   data?: any;
   visible: boolean;
@@ -131,7 +131,7 @@ export interface MapSettings {
   mapTypeId: google.maps.MapTypeId;
   styles?: google.maps.MapTypeStyle[];
   restriction?: google.maps.MapRestriction;
-  gestureHandling?: 'auto' | 'cooperative' | 'greedy' | 'none';
+  gestureHandling?: "auto" | "cooperative" | "greedy" | "none";
   draggable?: boolean;
   scrollwheel?: boolean;
   disableDoubleClickZoom?: boolean;
@@ -140,14 +140,14 @@ export interface MapSettings {
 
 export interface DrawingMode {
   enabled: boolean;
-  mode: 'marker' | 'polygon' | 'polyline' | 'circle' | 'rectangle' | null;
+  mode: "marker" | "polygon" | "polyline" | "circle" | "rectangle" | null;
   options?: google.maps.drawing.DrawingManagerOptions;
 }
 
 export interface MeasurementMode {
   enabled: boolean;
-  mode: 'distance' | 'area' | null;
-  units: 'metric' | 'imperial';
+  mode: "distance" | "area" | null;
+  units: "metric" | "imperial";
   results?: {
     distance?: number;
     area?: number;
@@ -157,7 +157,7 @@ export interface MeasurementMode {
 
 export interface CoordinateDisplay {
   enabled: boolean;
-  format: 'decimal' | 'dms';
+  format: "decimal" | "dms";
   precision: number;
   currentCoordinates?: google.maps.LatLngLiteral;
 }
@@ -183,11 +183,11 @@ export interface RegionRestriction {
 export interface Equipment {
   id: string;
   name: string;
-  type: 'antenna' | 'amplifier' | 'router' | 'switch' | 'modem' | 'other';
+  type: "antenna" | "amplifier" | "router" | "switch" | "modem" | "other";
   manufacturer: string;
   model: string;
   serialNumber: string;
-  status: 'active' | 'inactive' | 'maintenance' | 'critical';
+  status: "active" | "inactive" | "maintenance" | "critical";
   installedDate: string;
   warrantyExpiry?: string;
   specifications: Record<string, any>;
@@ -197,12 +197,12 @@ export interface Equipment {
 export interface NetworkSegment {
   id: string;
   name: string;
-  type: 'fiber' | 'copper' | 'wireless' | 'satellite';
+  type: "fiber" | "copper" | "wireless" | "satellite";
   startPoint: Coordinates;
   endPoint: Coordinates;
   capacity: number;
   currentLoad: number;
-  status: 'active' | 'inactive' | 'maintenance' | 'critical';
+  status: "active" | "inactive" | "maintenance" | "critical";
   equipment: Equipment[];
 }
 
@@ -227,10 +227,19 @@ export interface ChartData {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'select' | 'checkbox' | 'radio' | 'textarea' | 'number' | 'date';
+  type:
+    | "text"
+    | "email"
+    | "password"
+    | "select"
+    | "checkbox"
+    | "radio"
+    | "textarea"
+    | "number"
+    | "date";
   required?: boolean;
   placeholder?: string;
-  options?: { value: string; label: string; }[];
+  options?: { value: string; label: string }[];
   validation?: {
     min?: number;
     max?: number;
@@ -242,7 +251,7 @@ export interface FormField {
 // Notification types
 export interface Notification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: "info" | "success" | "warning" | "error";
   title: string;
   message: string;
   timestamp: string;
@@ -272,7 +281,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'manager' | 'technician' | 'viewer';
+  role: "admin" | "manager" | "technician" | "viewer";
   permissions: string[];
   assignedStates?: string[];
   department?: string;
@@ -282,6 +291,19 @@ export interface User {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  // Extended fields for enhanced user management
+  employeeId?: string;
+  gender?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    pinCode: string;
+  };
+  supervisorName?: string;
+  officeLocation?: string;
+  profilePicture?: File | null;
+  reportingManagers?: string[];
 }
 
 export interface LoginCredentials {
@@ -352,7 +374,7 @@ export interface UserGroup {
 export interface GroupMember {
   userId: string;
   groupId: string;
-  role: 'member' | 'admin' | 'moderator';
+  role: "member" | "admin" | "moderator";
   joinedAt: string;
   isActive: boolean;
 }
@@ -362,16 +384,31 @@ export interface PermissionTemplate {
   name: string;
   description: string;
   permissions: string[];
-  category: 'basic' | 'advanced' | 'admin' | 'custom';
+  category: "basic" | "advanced" | "admin" | "custom";
   isBuiltIn: boolean;
   createdAt: string;
 }
 
 export interface BulkOperation {
   id: string;
-  type: 'import' | 'export' | 'update' | 'delete' | 'migrate' | 'assign_users' | 'move_users' | 'update_permissions' | 'assign_states';
-  target: 'users' | 'groups' | 'data' | 'configurations' | 'permissions';
-  status: 'pending' | 'in_progress' | 'running' | 'completed' | 'failed' | 'cancelled';
+  type:
+    | "import"
+    | "export"
+    | "update"
+    | "delete"
+    | "migrate"
+    | "assign_users"
+    | "move_users"
+    | "update_permissions"
+    | "assign_states";
+  target: "users" | "groups" | "data" | "configurations" | "permissions";
+  status:
+    | "pending"
+    | "in_progress"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled";
   progress: number;
   totalItems: number;
   processedItems: number;
@@ -399,70 +436,76 @@ export interface BulkOperation {
 // Permission categories
 export const PERMISSION_CATEGORIES = {
   map: {
-    name: 'Map Operations',
+    name: "Map Operations",
     permissions: [
-      'map_view',
-      'map_edit',
-      'distance_measurement',
-      'polygon_drawing',
-      'elevation_analysis'
+      "map_view",
+      "map_edit",
+      "distance_measurement",
+      "polygon_drawing",
+      "elevation_analysis"
     ]
   },
   regions: {
-    name: 'Region Management',
+    name: "Region Management",
     permissions: [
-      'region_view',
-      'region_assign',
-      'region_edit',
-      'geofencing_manage'
+      "region_view",
+      "region_assign",
+      "region_edit",
+      "geofencing_manage"
     ]
   },
   users: {
-    name: 'User Management',
+    name: "User Management",
     permissions: [
-      'user_view',
-      'user_create',
-      'user_edit',
-      'user_delete',
-      'user_permissions'
+      "user_view",
+      "user_create",
+      "user_edit",
+      "user_delete",
+      "user_permissions"
     ]
   },
   groups: {
-    name: 'Group Management',
+    name: "Group Management",
     permissions: [
-      'group_view',
-      'group_create',
-      'group_edit',
-      'group_delete',
-      'group_members'
+      "group_view",
+      "group_create",
+      "group_edit",
+      "group_delete",
+      "group_members"
     ]
   },
   analytics: {
-    name: 'Analytics & Reports',
+    name: "Analytics & Reports",
     permissions: [
-      'analytics_view',
-      'analytics_advanced',
-      'reports_generate',
-      'reports_export'
+      "analytics_view",
+      "analytics_advanced",
+      "reports_generate",
+      "reports_export"
     ]
   },
   system: {
-    name: 'System Administration',
+    name: "System Administration",
     permissions: [
-      'system_settings',
-      'audit_logs',
-      'backup_restore',
-      'system_monitor'
+      "system_settings",
+      "audit_logs",
+      "backup_restore",
+      "system_monitor"
     ]
   }
 } as const;
 
 // Role permissions mapping
-export const ROLE_PERMISSIONS: Record<User['role'], string[]> = {
-  admin: ['all'],
-  manager: ['read', 'write', 'manage_users', 'view_analytics', 'manage_equipment'],
-  technician: ['read', 'write', 'manage_equipment', 'update_status'],
-  viewer: ['read', 'view_basic_analytics']
+export const ROLE_PERMISSIONS: Record<User["role"], string[]> = {
+  admin: ["all"],
+  manager: [
+    "read",
+    "write",
+    "manage_users",
+    "view_analytics",
+    "manage_equipment"
+  ],
+  technician: ["read", "write", "manage_equipment", "update_status"],
+  viewer: ["read", "view_basic_analytics"]
 };
 
 // Manager Dashboard types
@@ -481,7 +524,7 @@ export interface UserStats {
   totalUsers: number;
   activeUsers: number;
   newUsersThisMonth: number;
-  usersPerRole: Record<User['role'], number>;
+  usersPerRole: Record<User["role"], number>;
   usersPerGroup: Record<string, number>;
   usersPerState: Record<string, number>;
 }
@@ -512,16 +555,16 @@ export interface SystemPerformanceMetrics {
 export interface DashboardWidget {
   id: string;
   title: string;
-  type: 'chart' | 'stat' | 'table' | 'map';
-  size: 'small' | 'medium' | 'large';
+  type: "chart" | "stat" | "table" | "map";
+  size: "small" | "medium" | "large";
   position: { x: number; y: number };
   data: any;
   refreshInterval?: number;
 }
 
 export interface UserFilter {
-  role?: User['role'][];
-  status?: ('active' | 'inactive')[];
+  role?: User["role"][];
+  status?: ("active" | "inactive")[];
   groups?: string[];
   states?: string[];
   dateRange?: {
@@ -532,7 +575,13 @@ export interface UserFilter {
 }
 
 export interface BulkUserAction {
-  type: 'activate' | 'deactivate' | 'assign_group' | 'assign_states' | 'update_permissions' | 'delete';
+  type:
+    | "activate"
+    | "deactivate"
+    | "assign_group"
+    | "assign_states"
+    | "update_permissions"
+    | "delete";
   userIds: string[];
   data?: any;
 }
@@ -540,7 +589,7 @@ export interface BulkUserAction {
 export interface UsageReport {
   id: string;
   name: string;
-  type: 'user_activity' | 'feature_usage' | 'performance' | 'security';
+  type: "user_activity" | "feature_usage" | "performance" | "security";
   dateRange: {
     start: string;
     end: string;
@@ -555,9 +604,16 @@ export interface ImportFile {
   id: string;
   name: string;
   size: number;
-  type: 'kml' | 'kmz' | 'csv' | 'xlsx';
+  type: "kml" | "kmz" | "csv" | "xlsx";
   file: File;
-  status: 'pending' | 'validating' | 'valid' | 'invalid' | 'processing' | 'completed' | 'error';
+  status:
+    | "pending"
+    | "validating"
+    | "valid"
+    | "invalid"
+    | "processing"
+    | "completed"
+    | "error";
   error?: string;
   preview?: any;
   metadata?: {
@@ -571,7 +627,7 @@ export interface ImportFile {
 export interface FieldMapping {
   sourceField: string;
   targetField: string;
-  dataType: 'string' | 'number' | 'date' | 'coordinate' | 'boolean';
+  dataType: "string" | "number" | "date" | "coordinate" | "boolean";
   required: boolean;
   defaultValue?: any;
   validation?: {
@@ -588,7 +644,7 @@ export interface ImportJob {
   files: ImportFile[];
   fieldMappings: Record<string, FieldMapping[]>;
   settings: ImportSettings;
-  status: 'preparing' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: "preparing" | "running" | "completed" | "failed" | "cancelled";
   progress: {
     total: number;
     processed: number;
@@ -608,7 +664,7 @@ export interface ImportSettings {
   skipInvalidRecords: boolean;
   createBackup: boolean;
   overwriteExisting: boolean;
-  coordinateSystem: 'WGS84' | 'UTM' | 'Indian1975';
+  coordinateSystem: "WGS84" | "UTM" | "Indian1975";
   defaultLayer?: string;
   preserveAttributes: boolean;
   validateGeometry: boolean;
@@ -616,8 +672,8 @@ export interface ImportSettings {
 
 export interface ImportError {
   id: string;
-  type: 'validation' | 'parsing' | 'processing' | 'system';
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  type: "validation" | "parsing" | "processing" | "system";
+  severity: "low" | "medium" | "high" | "critical";
   message: string;
   details?: string;
   file?: string;
@@ -628,7 +684,7 @@ export interface ImportError {
 
 export interface ImportWarning {
   id: string;
-  type: 'data_quality' | 'coordinate' | 'attribute' | 'format';
+  type: "data_quality" | "coordinate" | "attribute" | "format";
   message: string;
   details?: string;
   file?: string;
@@ -640,7 +696,13 @@ export interface ImportWarning {
 export interface GeospatialData {
   id: string;
   name: string;
-  type: 'point' | 'line' | 'polygon' | 'multipoint' | 'multiline' | 'multipolygon';
+  type:
+    | "point"
+    | "line"
+    | "polygon"
+    | "multipoint"
+    | "multiline"
+    | "multipolygon";
   coordinates: number[] | number[][] | number[][][];
   properties: Record<string, any>;
   style?: {
@@ -662,7 +724,7 @@ export interface ImportTemplate {
   id: string;
   name: string;
   description: string;
-  fileType: 'csv' | 'xlsx';
+  fileType: "csv" | "xlsx";
   fieldMappings: FieldMapping[];
   settings: ImportSettings;
   isBuiltIn: boolean;
@@ -675,7 +737,7 @@ export interface DataLayer {
   id: string;
   name: string;
   description?: string;
-  type: 'imported' | 'system' | 'user';
+  type: "imported" | "system" | "user";
   features: GeospatialData[];
   style: {
     defaultStyle: any;
@@ -705,8 +767,8 @@ export interface InfrastructureItem {
   coordinates: Coordinates;
   address?: string;
   customAttributes: Record<string, any>;
-  status: 'active' | 'inactive' | 'maintenance' | 'planned' | 'decommissioned';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: "active" | "inactive" | "maintenance" | "planned" | "decommissioned";
+  priority: "low" | "medium" | "high" | "critical";
   owner: string;
   assignedTo?: string;
   installationDate?: string;
@@ -762,7 +824,17 @@ export interface InfrastructureSubCategory {
 export interface AttributeDefinition {
   name: string;
   label: string;
-  type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'boolean' | 'textarea' | 'url' | 'email' | 'coordinates';
+  type:
+    | "text"
+    | "number"
+    | "date"
+    | "select"
+    | "multiselect"
+    | "boolean"
+    | "textarea"
+    | "url"
+    | "email"
+    | "coordinates";
   required: boolean;
   defaultValue?: any;
   options?: string[];
@@ -779,7 +851,7 @@ export interface AttributeDefinition {
 export interface InfrastructureAttachment {
   id: string;
   name: string;
-  type: 'image' | 'document' | 'video' | 'audio' | 'other';
+  type: "image" | "document" | "video" | "audio" | "other";
   url: string;
   size: number;
   uploadedBy: string;
@@ -790,14 +862,14 @@ export interface InfrastructureAttachment {
 export interface InfrastructureFilter {
   categories?: string[];
   subCategories?: string[];
-  status?: InfrastructureItem['status'][];
-  priority?: InfrastructureItem['priority'][];
+  status?: InfrastructureItem["status"][];
+  priority?: InfrastructureItem["priority"][];
   tags?: string[];
   owner?: string[];
   assignedTo?: string[];
   region?: string;
   dateRange?: {
-    field: 'createdAt' | 'updatedAt' | 'installationDate' | 'lastInspected';
+    field: "createdAt" | "updatedAt" | "installationDate" | "lastInspected";
     start: string;
     end: string;
   };
@@ -809,25 +881,32 @@ export interface InfrastructureFilter {
 export interface InfrastructureExport {
   id: string;
   name: string;
-  format: 'csv' | 'xlsx' | 'kml' | 'geojson' | 'pdf';
+  format: "csv" | "xlsx" | "kml" | "geojson" | "pdf";
   filters: InfrastructureFilter;
   includeFields: string[];
   includeAttachments: boolean;
   includeCoordinates: boolean;
-  coordinateFormat: 'decimal' | 'dms';
+  coordinateFormat: "decimal" | "dms";
   createdBy: string;
   createdAt: string;
   downloadUrl?: string;
-  status: 'generating' | 'ready' | 'expired' | 'failed';
+  status: "generating" | "ready" | "expired" | "failed";
   expiresAt?: string;
 }
 
 export interface InfrastructureBulkOperation {
   id: string;
-  type: 'update_status' | 'update_category' | 'assign_to' | 'add_tags' | 'remove_tags' | 'delete' | 'export';
+  type:
+    | "update_status"
+    | "update_category"
+    | "assign_to"
+    | "add_tags"
+    | "remove_tags"
+    | "delete"
+    | "export";
   itemIds: string[];
   data: any;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
   progress: {
     total: number;
     processed: number;
@@ -841,7 +920,12 @@ export interface InfrastructureBulkOperation {
 export interface InfrastructureReport {
   id: string;
   name: string;
-  type: 'status_summary' | 'maintenance_schedule' | 'cost_analysis' | 'geographic_distribution' | 'custom';
+  type:
+    | "status_summary"
+    | "maintenance_schedule"
+    | "cost_analysis"
+    | "geographic_distribution"
+    | "custom";
   filters: InfrastructureFilter;
   generatedAt: string;
   generatedBy: string;
@@ -857,7 +941,16 @@ export interface InfrastructureReport {
 // Comprehensive Search System types
 export interface SearchResult {
   id: string;
-  type: 'address' | 'coordinate' | 'place' | 'infrastructure' | 'imported_data' | 'user' | 'group' | 'state' | 'region';
+  type:
+    | "address"
+    | "coordinate"
+    | "place"
+    | "infrastructure"
+    | "imported_data"
+    | "user"
+    | "group"
+    | "state"
+    | "region";
   title: string;
   subtitle?: string;
   description?: string;
@@ -876,13 +969,13 @@ export interface SearchResultAction {
   id: string;
   label: string;
   icon: string;
-  action: 'view' | 'edit' | 'delete' | 'navigate' | 'share' | 'export';
+  action: "view" | "edit" | "delete" | "navigate" | "share" | "export";
   permissions?: string[];
 }
 
 export interface SearchQuery {
   query: string;
-  types: SearchResult['type'][];
+  types: SearchResult["type"][];
   filters: SearchFilters;
   spatialSearch?: SpatialSearch;
   limit: number;
@@ -908,16 +1001,16 @@ export interface SearchFilters {
 export interface SpatialSearch {
   center: Coordinates;
   radius?: number; // in km
-  shape?: 'circle' | 'rectangle' | 'polygon';
+  shape?: "circle" | "rectangle" | "polygon";
   bounds?: BoundingBox;
   polygon?: Coordinates[];
-  units: 'km' | 'miles' | 'meters';
+  units: "km" | "miles" | "meters";
 }
 
 export interface SearchHistory {
   id: string;
   query: string;
-  type: SearchResult['type'] | 'mixed';
+  type: SearchResult["type"] | "mixed";
   timestamp: string;
   userId: string;
   resultsCount: number;
@@ -939,7 +1032,7 @@ export interface SavedSearch {
   tags: string[];
   notifications: {
     enabled: boolean;
-    frequency: 'immediate' | 'daily' | 'weekly';
+    frequency: "immediate" | "daily" | "weekly";
     conditions: string[];
   };
 }
@@ -947,7 +1040,7 @@ export interface SavedSearch {
 export interface SearchSuggestion {
   id: string;
   text: string;
-  type: SearchResult['type'];
+  type: SearchResult["type"];
   frequency: number;
   category?: string;
   icon?: string;
@@ -967,18 +1060,25 @@ export interface GeocodeResult {
     postalCode?: string;
     district?: string;
   };
-  accuracy: 'exact' | 'interpolated' | 'range' | 'center';
-  source: 'google' | 'osm' | 'local';
+  accuracy: "exact" | "interpolated" | "range" | "center";
+  source: "google" | "osm" | "local";
 }
 
 export interface AddressSearchResult extends SearchResult {
   geocode: GeocodeResult;
-  type: 'address';
+  type: "address";
 }
 
 export interface PlaceSearchResult extends SearchResult {
-  type: 'place';
-  placeType: 'landmark' | 'business' | 'government' | 'education' | 'hospital' | 'transport' | 'other';
+  type: "place";
+  placeType:
+    | "landmark"
+    | "business"
+    | "government"
+    | "education"
+    | "hospital"
+    | "transport"
+    | "other";
   contact?: {
     phone?: string;
     website?: string;
@@ -989,8 +1089,8 @@ export interface PlaceSearchResult extends SearchResult {
 }
 
 export interface CoordinateSearchResult extends SearchResult {
-  type: 'coordinate';
-  format: 'decimal' | 'dms' | 'utm' | 'mgrs';
+  type: "coordinate";
+  format: "decimal" | "dms" | "utm" | "mgrs";
   elevation?: number;
   timezone?: string;
   nearbyPlaces?: PlaceSearchResult[];
@@ -999,7 +1099,7 @@ export interface CoordinateSearchResult extends SearchResult {
 export interface SearchIndex {
   id: string;
   content: string;
-  type: SearchResult['type'];
+  type: SearchResult["type"];
   category?: string;
   tags: string[];
   coordinates?: Coordinates;
@@ -1018,7 +1118,7 @@ export interface SearchAnalytics {
     averageResultsCount: number;
   }>;
   popularTypes: Array<{
-    type: SearchResult['type'];
+    type: SearchResult["type"];
     count: number;
     percentage: number;
   }>;
@@ -1033,7 +1133,7 @@ export interface SearchAnalytics {
 
 // UI/UX Enhancement types
 export interface ThemeConfig {
-  mode: 'light' | 'dark' | 'system';
+  mode: "light";
   colors: {
     primary: string;
     secondary: string;
@@ -1086,7 +1186,7 @@ export interface ThemeConfig {
 export interface AccessibilityConfig {
   highContrast: boolean;
   reducedMotion: boolean;
-  fontSize: 'small' | 'medium' | 'large' | 'xl';
+  fontSize: "small" | "medium" | "large" | "xl";
   focusVisible: boolean;
   screenReaderMode: boolean;
   keyboardNavigation: boolean;
@@ -1101,7 +1201,7 @@ export interface KeyboardShortcut {
   metaKey?: boolean;
   description: string;
   action: () => void;
-  category: 'navigation' | 'search' | 'tools' | 'data' | 'general';
+  category: "navigation" | "search" | "tools" | "data" | "general";
   enabled: boolean;
 }
 
@@ -1109,7 +1209,7 @@ export interface LoadingState {
   isLoading: boolean;
   progress?: number;
   message?: string;
-  type: 'spinner' | 'progress' | 'skeleton' | 'dots';
+  type: "spinner" | "progress" | "skeleton" | "dots";
 }
 
 export interface ErrorBoundaryState {
@@ -1121,15 +1221,15 @@ export interface ErrorBoundaryState {
 
 export interface ToastNotification {
   id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
+  type: "success" | "error" | "warning" | "info";
   title?: string;
   message: string;
   duration?: number;
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
+  position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
   actions?: Array<{
     label: string;
     action: () => void;
-    style?: 'primary' | 'secondary';
+    style?: "primary" | "secondary";
   }>;
   dismissible?: boolean;
   persistent?: boolean;
@@ -1139,8 +1239,8 @@ export interface AnimationConfig {
   enabled: boolean;
   duration: number;
   easing: string;
-  type: 'fade' | 'slide' | 'scale' | 'bounce' | 'elastic';
-  direction?: 'up' | 'down' | 'left' | 'right' | 'in' | 'out';
+  type: "fade" | "slide" | "scale" | "bounce" | "elastic";
+  direction?: "up" | "down" | "left" | "right" | "in" | "out";
 }
 
 export interface ResponsiveBreakpoints {
@@ -1149,7 +1249,7 @@ export interface ResponsiveBreakpoints {
   md: number; // 768px
   lg: number; // 1024px
   xl: number; // 1280px
-  '2xl': number; // 1536px
+  "2xl": number; // 1536px
 }
 
 export interface UIState {
@@ -1168,7 +1268,7 @@ export interface SavedDataItem {
   id: string;
   name: string;
   description?: string;
-  type: 'distance' | 'polygon' | 'elevation' | 'infrastructure' | 'custom';
+  type: "distance" | "polygon" | "elevation" | "infrastructure" | "custom";
   data: any; // Flexible data structure for different tool types
   metadata: {
     createdAt: string;
@@ -1205,7 +1305,7 @@ export interface DataPermissions {
 
 export interface DataShareSettings {
   isShared: boolean;
-  shareType: 'public' | 'organization' | 'specific_users' | 'link';
+  shareType: "public" | "organization" | "specific_users" | "link";
   sharedWith: string[];
   shareUrl?: string;
   expiresAt?: string;
@@ -1240,10 +1340,10 @@ export interface DataFolder {
 
 export interface DataBulkOperation {
   id: string;
-  type: 'move' | 'copy' | 'delete' | 'share' | 'tag' | 'permission_change';
+  type: "move" | "copy" | "delete" | "share" | "tag" | "permission_change";
   items: string[];
   parameters: any;
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
   progress: number;
   startedAt?: string;
   completedAt?: string;
@@ -1252,7 +1352,7 @@ export interface DataBulkOperation {
 }
 
 export interface DataFilter {
-  type?: ('distance' | 'polygon' | 'elevation' | 'infrastructure' | 'custom')[];
+  type?: ("distance" | "polygon" | "elevation" | "infrastructure" | "custom")[];
   createdBy?: string[];
   dateRange?: {
     start: string;
@@ -1260,7 +1360,7 @@ export interface DataFilter {
   };
   tags?: string[];
   categories?: string[];
-  hasPermission?: 'view' | 'edit' | 'delete' | 'share';
+  hasPermission?: "view" | "edit" | "delete" | "share";
   isShared?: boolean;
   location?: {
     coordinates: Coordinates;
@@ -1273,8 +1373,8 @@ export interface DataFilter {
 }
 
 export interface DataSort {
-  field: 'name' | 'createdAt' | 'updatedAt' | 'size' | 'type' | 'createdBy';
-  direction: 'asc' | 'desc';
+  field: "name" | "createdAt" | "updatedAt" | "size" | "type" | "createdBy";
+  direction: "asc" | "desc";
 }
 
 export interface DataSearchQuery {
@@ -1302,16 +1402,16 @@ export interface DataSearchResult {
 }
 
 export interface DataExportOptions {
-  format: 'json' | 'geojson' | 'kml' | 'csv' | 'xlsx';
+  format: "json" | "geojson" | "kml" | "csv" | "xlsx";
   includeMetadata: boolean;
   includeVersionHistory: boolean;
-  compression?: 'zip' | 'gzip';
+  compression?: "zip" | "gzip";
   projection?: string; // For geospatial formats
 }
 
 export interface DataImportOptions {
-  format: 'json' | 'geojson' | 'kml' | 'csv' | 'xlsx';
-  mergeBehavior: 'skip' | 'overwrite' | 'create_new';
+  format: "json" | "geojson" | "kml" | "csv" | "xlsx";
+  mergeBehavior: "skip" | "overwrite" | "create_new";
   preserveMetadata: boolean;
   assignToFolder?: string;
   defaultPermissions?: Partial<DataPermissions>;
@@ -1352,7 +1452,7 @@ export interface DataAnalytics {
   accessHistory: {
     userId: string;
     timestamp: string;
-    action: 'view' | 'edit' | 'download' | 'share';
+    action: "view" | "edit" | "download" | "share";
   }[];
 }
 
@@ -1380,12 +1480,19 @@ export interface UserActivity {
   toolsUsed: string[];
   dataCreated: number;
   dataShared: number;
-  status: 'active' | 'idle' | 'inactive';
+  status: "active" | "idle" | "inactive";
 }
 
 export interface ToolMetrics {
   toolName: string;
-  toolType: 'distance' | 'polygon' | 'elevation' | 'infrastructure' | 'search' | 'admin' | 'data';
+  toolType:
+    | "distance"
+    | "polygon"
+    | "elevation"
+    | "infrastructure"
+    | "search"
+    | "admin"
+    | "data";
   usageCount: number;
   uniqueUsers: number;
   averageUsageTime: number;
@@ -1449,7 +1556,7 @@ export interface PerformanceMetrics {
   userSatisfactionScore: number;
   bottlenecks: Array<{
     component: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
+    severity: "low" | "medium" | "high" | "critical";
     impact: string;
     suggestion: string;
   }>;
@@ -1468,7 +1575,15 @@ export interface UsageTrend {
 export interface AnalyticsReport {
   id: string;
   title: string;
-  type: 'usage_summary' | 'usage' | 'performance' | 'user_activity' | 'data_analytics' | 'system_health' | 'tool_metrics' | 'custom';
+  type:
+    | "usage_summary"
+    | "usage"
+    | "performance"
+    | "user_activity"
+    | "data_analytics"
+    | "system_health"
+    | "tool_metrics"
+    | "custom";
   period: {
     start: string;
     end: string;
@@ -1476,8 +1591,8 @@ export interface AnalyticsReport {
   data: any;
   generatedBy: string;
   generatedAt: string;
-  format: 'json' | 'csv' | 'pdf' | 'xlsx';
-  status: 'generating' | 'ready' | 'failed';
+  format: "json" | "csv" | "pdf" | "xlsx";
+  status: "generating" | "ready" | "failed";
   downloadUrl?: string;
   expiresAt?: string;
 }
@@ -1491,13 +1606,13 @@ export interface AnalyticsFilter {
   tools?: string[];
   regions?: string[];
   dataTypes?: string[];
-  granularity?: 'hour' | 'day' | 'week' | 'month';
+  granularity?: "hour" | "day" | "week" | "month";
 }
 
 export interface AnalyticsDashboardConfig {
   widgets: Array<{
     id: string;
-    type: 'chart' | 'metric' | 'table' | 'map';
+    type: "chart" | "metric" | "table" | "map";
     title: string;
     dataSource: string;
     position: { x: number; y: number; w: number; h: number };
@@ -1505,7 +1620,7 @@ export interface AnalyticsDashboardConfig {
   }>;
   refreshInterval: number;
   autoRefresh: boolean;
-  theme: 'light' | 'dark';
+  theme: "light";
 }
 
 export interface AlertRule {
@@ -1513,11 +1628,11 @@ export interface AlertRule {
   name: string;
   description: string;
   metric: string;
-  condition: 'above' | 'below' | 'equals';
+  condition: "above" | "below" | "equals";
   threshold: number;
-  severity: 'info' | 'warning' | 'error' | 'critical';
+  severity: "info" | "warning" | "error" | "critical";
   enabled: boolean;
-  channels: ('email' | 'sms' | 'push' | 'webhook')[];
+  channels: ("email" | "sms" | "push" | "webhook")[];
   recipients: string[];
   lastTriggered?: string;
   triggerCount: number;
@@ -1525,11 +1640,11 @@ export interface AlertRule {
 
 export interface AnalyticsInsight {
   id: string;
-  type: 'trend' | 'anomaly' | 'recommendation' | 'alert';
+  type: "trend" | "anomaly" | "recommendation" | "alert";
   title: string;
   description: string;
-  severity: 'low' | 'medium' | 'high';
-  category: 'usage' | 'performance' | 'security' | 'optimization';
+  severity: "low" | "medium" | "high";
+  category: "usage" | "performance" | "security" | "optimization";
   data: any;
   actionable: boolean;
   suggestedActions?: string[];
@@ -1566,11 +1681,16 @@ export interface SystemConfig {
 // Advanced Admin System Types
 export interface SystemConfiguration {
   id: string;
-  category: 'security' | 'performance' | 'features' | 'integrations' | 'storage';
+  category:
+    | "security"
+    | "performance"
+    | "features"
+    | "integrations"
+    | "storage";
   key: string;
   value: any;
   description: string;
-  dataType: 'string' | 'number' | 'boolean' | 'json' | 'array';
+  dataType: "string" | "number" | "boolean" | "json" | "array";
   defaultValue: any;
   isEditable: boolean;
   requiresRestart: boolean;
@@ -1583,7 +1703,7 @@ export interface SystemConfiguration {
   };
   lastModified: string;
   modifiedBy: string;
-  environment: 'development' | 'staging' | 'production' | 'all';
+  environment: "development" | "staging" | "production" | "all";
 }
 
 export interface AuditLogEntry {
@@ -1591,16 +1711,33 @@ export interface AuditLogEntry {
   timestamp: string;
   userId: string;
   userName: string;
-  action: 'create' | 'read' | 'update' | 'delete' | 'login' | 'logout' | 'export' | 'import' | 'config_change' | 'permission_change';
+  action:
+    | "create"
+    | "read"
+    | "update"
+    | "delete"
+    | "login"
+    | "logout"
+    | "export"
+    | "import"
+    | "config_change"
+    | "permission_change";
   resource: string;
   resourceId?: string;
-  resourceType: 'user' | 'group' | 'data' | 'system' | 'configuration' | 'permission' | 'backup';
+  resourceType:
+    | "user"
+    | "group"
+    | "data"
+    | "system"
+    | "configuration"
+    | "permission"
+    | "backup";
   details: any;
   ipAddress: string;
   userAgent: string;
   sessionId: string;
-  outcome: 'success' | 'failure' | 'partial';
-  risk: 'low' | 'medium' | 'high' | 'critical';
+  outcome: "success" | "failure" | "partial";
+  risk: "low" | "medium" | "high" | "critical";
   metadata?: any;
 }
 
@@ -1609,7 +1746,7 @@ export interface AdvancedPermission {
   name: string;
   description: string;
   category: string;
-  scope: 'global' | 'resource' | 'conditional';
+  scope: "global" | "resource" | "conditional";
   conditions?: {
     timeRestriction?: {
       startTime: string;
@@ -1626,7 +1763,7 @@ export interface AdvancedPermission {
       resourceIds: string[];
     };
   };
-  inheritance: 'allow' | 'deny' | 'inherit';
+  inheritance: "allow" | "deny" | "inherit";
   priority: number;
   expiresAt?: string;
   grantedBy: string;
@@ -1654,24 +1791,29 @@ export interface UserActivitySession {
     resource: string;
     details: any;
   }>;
-  status: 'active' | 'ended' | 'expired' | 'terminated';
-  risk: 'low' | 'medium' | 'high';
+  status: "active" | "ended" | "expired" | "terminated";
+  risk: "low" | "medium" | "high";
   anomalies?: string[];
 }
-
 
 export interface SystemMaintenanceTask {
   id: string;
   name: string;
   description: string;
-  type: 'backup' | 'cleanup' | 'optimization' | 'migration' | 'health_check' | 'security_scan';
+  type:
+    | "backup"
+    | "cleanup"
+    | "optimization"
+    | "migration"
+    | "health_check"
+    | "security_scan";
   schedule?: {
-    frequency: 'manual' | 'daily' | 'weekly' | 'monthly';
+    frequency: "manual" | "daily" | "weekly" | "monthly";
     time?: string;
     dayOfWeek?: number;
     dayOfMonth?: number;
   };
-  status: 'scheduled' | 'running' | 'completed' | 'failed' | 'cancelled';
+  status: "scheduled" | "running" | "completed" | "failed" | "cancelled";
   lastRun?: string;
   nextRun?: string;
   duration?: number;
@@ -1696,8 +1838,8 @@ export interface BackupRecord {
   id: string;
   name: string;
   description?: string;
-  type: 'full' | 'incremental' | 'differential';
-  scope: 'users' | 'data' | 'configurations' | 'full_system';
+  type: "full" | "incremental" | "differential";
+  scope: "users" | "data" | "configurations" | "full_system";
   size: number;
   createdAt: string;
   createdBy: string;
@@ -1708,7 +1850,7 @@ export interface BackupRecord {
     expiresAt: string;
     autoDelete: boolean;
   };
-  status: 'creating' | 'available' | 'restoring' | 'expired' | 'corrupted';
+  status: "creating" | "available" | "restoring" | "expired" | "corrupted";
   metadata: {
     version: string;
     userCount?: number;
@@ -1720,10 +1862,10 @@ export interface BackupRecord {
 
 export interface AdminSystemHealth {
   timestamp: string;
-  overall: 'healthy' | 'warning' | 'critical' | 'unknown';
+  overall: "healthy" | "warning" | "critical" | "unknown";
   components: Array<{
     name: string;
-    status: 'healthy' | 'warning' | 'critical' | 'unknown';
+    status: "healthy" | "warning" | "critical" | "unknown";
     message?: string;
     metrics?: any;
     lastCheck: string;
@@ -1747,7 +1889,7 @@ export interface AdminSystemHealth {
   };
   alerts: Array<{
     id: string;
-    severity: 'info' | 'warning' | 'critical';
+    severity: "info" | "warning" | "critical";
     message: string;
     timestamp: string;
     acknowledged: boolean;
@@ -1782,7 +1924,13 @@ export interface BaseMapMarkerConfig {
 
 export interface BaseMapOverlay {
   id: string;
-  type: 'marker' | 'polygon' | 'polyline' | 'circle' | 'info_window' | 'data_layer';
+  type:
+    | "marker"
+    | "polygon"
+    | "polyline"
+    | "circle"
+    | "info_window"
+    | "data_layer";
   instance: google.maps.MVCObject;
   data?: any;
   visible: boolean;
@@ -1802,7 +1950,13 @@ export interface BaseMapState {
 }
 
 export interface BaseMapEvent {
-  type: 'click' | 'right_click' | 'zoom_changed' | 'center_changed' | 'bounds_changed' | 'map_type_changed';
+  type:
+    | "click"
+    | "right_click"
+    | "zoom_changed"
+    | "center_changed"
+    | "bounds_changed"
+    | "map_type_changed";
   data: any;
   timestamp: string;
 }
@@ -1826,10 +1980,15 @@ export interface BaseMapProvider {
     focusOnIndia: () => void;
   };
   utils: {
-    geocodeAddress: (address: string) => Promise<google.maps.LatLngLiteral | null>;
+    geocodeAddress: (
+      address: string
+    ) => Promise<google.maps.LatLngLiteral | null>;
     reverseGeocode: (coordinates: Coordinates) => Promise<string | null>;
     calculateDistance: (point1: Coordinates, point2: Coordinates) => number;
     isInIndiaBounds: (coordinates: Coordinates) => boolean;
-    formatCoordinates: (coordinates: Coordinates, format: 'decimal' | 'dms') => string;
+    formatCoordinates: (
+      coordinates: Coordinates,
+      format: "decimal" | "dms"
+    ) => string;
   };
 }

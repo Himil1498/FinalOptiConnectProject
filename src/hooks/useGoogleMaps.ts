@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
-import { convertStringToMapTypeId } from '../utils/mapRestrictions';
+import { applyIndiaRestriction, getIndiaCenterPoint, convertStringToMapTypeId } from '../utils/unifiedGeofencing';
 
 interface GoogleMapsConfig {
   center: { lat: number; lng: number };
@@ -158,7 +158,7 @@ export const useGoogleMaps = (config: GoogleMapsConfig) => {
 
         await loader.load();
 
-        // Load India boundary data
+        // Load India boundary data using unified system
         const indiaData = await loadIndiaBoundary();
         let mapBounds: google.maps.LatLngBounds | undefined;
 

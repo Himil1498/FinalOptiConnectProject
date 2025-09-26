@@ -24,22 +24,19 @@ import MapControlsPanel from "./MapControlsPanel";
 import FloatingToolPanel from "./FloatingToolPanel";
 import MultiToolManager from "./MultiToolManager";
 import DistanceMeasurementTool from "./DistanceMeasurementTool";
-// import DistanceMeasurementToolV2 from "./DistanceMeasurementToolV2";
-// import SimpleDistanceTool from "./SimpleDistanceTool";
-// import UltraSimpleDistanceTool from "./UltraSimpleDistanceTool";
 import PolygonDrawingTool from "./PolygonDrawingTool";
 import ElevationTool from "./ElevationTool";
 import GeofencingSystem from "./GeofencingSystem";
-import KMLLayerManager from "./KMLLayerManager";
 import { useKMLLayers } from "../../hooks/useKMLLayers";
-// import DistanceToolDebugger from "./DistanceToolDebugger";
 
 // Import admin components
 import RegionAssignmentSystem from "../admin/RegionAssignmentSystem";
 import UserGroupsManagement from "../admin/UserGroupsManagement";
 import ManagerDashboard from "../admin/ManagerDashboard";
 import DataImportSystem from "../admin/DataImportSystem";
-import InfrastructureDataManagement, { InfrastructureDataManagementProps } from "../admin/InfrastructureDataManagement";
+import InfrastructureDataManagement, {
+  InfrastructureDataManagementProps
+} from "../admin/InfrastructureDataManagement";
 import { POPLocationData } from "./AddPOPLocationForm";
 
 // Import search and data components
@@ -451,50 +448,84 @@ const ComprehensiveGoogleMapInterface: React.FC<
   }, [activeWorkflow, addNotification]);
 
   // Location addition handler
-  const handleLocationAdd = useCallback((locationData: POPLocationData) => {
-    // This would normally save to backend or update KML data
-    console.log('New location added:', locationData);
+  const handleLocationAdd = useCallback(
+    (locationData: POPLocationData) => {
+      // This would normally save to backend or update KML data
+      console.log("New location added:", locationData);
 
-    // Create a marker on the map for the new location
-    if (mapInstance) {
-      const marker = new google.maps.Marker({
-        position: { lat: locationData.coordinates.lat, lng: locationData.coordinates.lng },
-        map: mapInstance,
-        title: locationData.name,
-        icon: {
-          url: `data:image/svg+xml,${encodeURIComponent(`
+      // Create a marker on the map for the new location
+      if (mapInstance) {
+        const marker = new google.maps.Marker({
+          position: {
+            lat: locationData.coordinates.lat,
+            lng: locationData.coordinates.lng
+          },
+          map: mapInstance,
+          title: locationData.name,
+          icon: {
+            url: `data:image/svg+xml,${encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
-              <circle cx="12" cy="12" r="8" fill="${locationData.color || (locationData.type === 'pop' ? '#3B82F6' : '#10B981')}" stroke="white" stroke-width="2"/>
-              <text x="12" y="16" text-anchor="middle" fill="white" font-size="12">${locationData.icon || (locationData.type === 'pop' ? '📡' : '📶')}</text>
+              <circle cx="12" cy="12" r="8" fill="${
+                locationData.color ||
+                (locationData.type === "pop" ? "#3B82F6" : "#10B981")
+              }" stroke="white" stroke-width="2"/>
+              <text x="12" y="16" text-anchor="middle" fill="white" font-size="12">${
+                locationData.icon || (locationData.type === "pop" ? "📡" : "📶")
+              }</text>
             </svg>
           `)}`,
-          scaledSize: new google.maps.Size(32, 32),
-          anchor: new google.maps.Point(16, 16)
-        },
-        animation: google.maps.Animation.DROP
-      });
+            scaledSize: new google.maps.Size(32, 32),
+            anchor: new google.maps.Point(16, 16)
+          },
+          animation: google.maps.Animation.DROP
+        });
 
-      // Create enhanced info window for the marker
-      const infoWindow = new google.maps.InfoWindow({
-        content: `
+        // Create enhanced info window for the marker
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
           <div style="max-width: 350px; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
             <!-- Header Section -->
-            <div style="background: linear-gradient(135deg, ${locationData.color || (locationData.type === 'pop' ? '#3B82F6' : '#10B981')} 0%, ${locationData.color || (locationData.type === 'pop' ? '#1E40AF' : '#065F46')} 100%); padding: 16px; color: white; position: relative;">
+            <div style="background: linear-gradient(135deg, ${
+              locationData.color ||
+              (locationData.type === "pop" ? "#3B82F6" : "#10B981")
+            } 0%, ${
+            locationData.color ||
+            (locationData.type === "pop" ? "#1E40AF" : "#065F46")
+          } 100%); padding: 16px; color: white; position: relative;">
               <div style="display: flex; align-items: center; margin-bottom: 8px;">
                 <div style="background: rgba(255,255,255,0.2); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 18px;">
-                  ${locationData.icon || (locationData.type === 'pop' ? '📡' : '📶')}
+                  ${
+                    locationData.icon ||
+                    (locationData.type === "pop" ? "📡" : "📶")
+                  }
                 </div>
                 <div style="flex: 1;">
-                  <h3 style="margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">${locationData.name}</h3>
+                  <h3 style="margin: 0; font-size: 18px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">${
+                    locationData.name
+                  }</h3>
                   <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
                     <span style="background: rgba(255,255,255,0.25); padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-                      ${locationData.type === 'pop' ? 'POP Location' : 'Sub POP Location'}
+                      ${
+                        locationData.type === "pop"
+                          ? "POP Location"
+                          : "Sub POP Location"
+                      }
                     </span>
-                    ${locationData.status ? `<span style="background: ${
-                      locationData.status === 'RFS' ? 'rgba(34, 197, 94, 0.9)' :
-                      locationData.status === 'L1' ? 'rgba(251, 191, 36, 0.9)' :
-                      locationData.status === 'L2' ? 'rgba(249, 115, 22, 0.9)' : 'rgba(239, 68, 68, 0.9)'
-                    }; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${locationData.status}</span>` : ''}
+                    ${
+                      locationData.status
+                        ? `<span style="background: ${
+                            locationData.status === "RFS"
+                              ? "rgba(34, 197, 94, 0.9)"
+                              : locationData.status === "L1"
+                              ? "rgba(251, 191, 36, 0.9)"
+                              : locationData.status === "L2"
+                              ? "rgba(249, 115, 22, 0.9)"
+                              : "rgba(239, 68, 68, 0.9)"
+                          }; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${
+                            locationData.status
+                          }</span>`
+                        : ""
+                    }
                   </div>
                 </div>
               </div>
@@ -504,26 +535,44 @@ const ComprehensiveGoogleMapInterface: React.FC<
             <div style="padding: 20px;">
               <!-- IDs and Technical Info -->
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                ${locationData.id ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #3b82f6;">
+                ${
+                  locationData.id
+                    ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #3b82f6;">
                   <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Location ID</div>
                   <div style="font-size: 13px; color: #1e293b; font-weight: 600;">${locationData.id}</div>
-                </div>` : ''}
-                ${locationData.unique_id ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #10b981;">
+                </div>`
+                    : ""
+                }
+                ${
+                  locationData.unique_id
+                    ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #10b981;">
                   <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Unique ID</div>
                   <div style="font-size: 13px; color: #1e293b; font-weight: 600;">${locationData.unique_id}</div>
-                </div>` : ''}
-                ${locationData.network_id ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #8b5cf6;">
+                </div>`
+                    : ""
+                }
+                ${
+                  locationData.network_id
+                    ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #8b5cf6;">
                   <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Network ID</div>
                   <div style="font-size: 13px; color: #1e293b; font-weight: 600;">${locationData.network_id}</div>
-                </div>` : ''}
-                ${locationData.ref_code ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #f59e0b;">
+                </div>`
+                    : ""
+                }
+                ${
+                  locationData.ref_code
+                    ? `<div style="background: #f8fafc; padding: 10px; border-radius: 8px; border-left: 3px solid #f59e0b;">
                   <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reference Code</div>
                   <div style="font-size: 13px; color: #1e293b; font-weight: 600;">${locationData.ref_code}</div>
-                </div>` : ''}
+                </div>`
+                    : ""
+                }
               </div>
 
               <!-- Address and Contact Info -->
-              ${locationData.address ? `<div style="background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%); padding: 12px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #fbbf24;">
+              ${
+                locationData.address
+                  ? `<div style="background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%); padding: 12px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #fbbf24;">
                 <div style="display: flex; align-items: flex-start;">
                   <span style="font-size: 16px; margin-right: 8px;">📍</span>
                   <div>
@@ -531,24 +580,40 @@ const ComprehensiveGoogleMapInterface: React.FC<
                     <div style="font-size: 13px; color: #92400e; font-weight: 500; line-height: 1.4;">${locationData.address}</div>
                   </div>
                 </div>
-              </div>` : ''}
+              </div>`
+                  : ""
+              }
 
-              ${locationData.contact_name ? `<div style="background: linear-gradient(135deg, #dcfce7 0%, #22c55e 100%); padding: 12px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #22c55e;">
+              ${
+                locationData.contact_name
+                  ? `<div style="background: linear-gradient(135deg, #dcfce7 0%, #22c55e 100%); padding: 12px; border-radius: 10px; margin-bottom: 12px; border: 1px solid #22c55e;">
                 <div style="display: flex; align-items: flex-start;">
                   <span style="font-size: 16px; margin-right: 8px;">👤</span>
                   <div style="flex: 1;">
                     <div style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Contact Information</div>
-                    <div style="font-size: 13px; color: #166534; font-weight: 600;">${locationData.contact_name}</div>
-                    ${locationData.contact_no ? `<div style="font-size: 12px; color: #166534; margin-top: 2px;">📞 ${locationData.contact_no}</div>` : ''}
+                    <div style="font-size: 13px; color: #166534; font-weight: 600;">${
+                      locationData.contact_name
+                    }</div>
+                    ${
+                      locationData.contact_no
+                        ? `<div style="font-size: 12px; color: #166534; margin-top: 2px;">📞 ${locationData.contact_no}</div>`
+                        : ""
+                    }
                   </div>
                 </div>
-              </div>` : ''}
+              </div>`
+                  : ""
+              }
 
               <!-- Additional Details -->
-              ${locationData.description ? `<div style="background: #f1f5f9; padding: 12px; border-radius: 10px; margin-bottom: 12px; border-left: 4px solid #64748b;">
+              ${
+                locationData.description
+                  ? `<div style="background: #f1f5f9; padding: 12px; border-radius: 10px; margin-bottom: 12px; border-left: 4px solid #64748b;">
                 <div style="font-size: 11px; color: #475569; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Description</div>
                 <div style="font-size: 13px; color: #334155; line-height: 1.4;">${locationData.description}</div>
-              </div>` : ''}
+              </div>`
+                  : ""
+              }
 
               <!-- Coordinates Footer -->
               <div style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1;">
@@ -556,52 +621,75 @@ const ComprehensiveGoogleMapInterface: React.FC<
                   <div>
                     <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Coordinates</div>
                     <div style="font-size: 12px; color: #334155; font-weight: 600; font-family: 'Courier New', monospace;">
-                      ${locationData.coordinates.lat.toFixed(6)}, ${locationData.coordinates.lng.toFixed(6)}
+                      ${locationData.coordinates.lat.toFixed(
+                        6
+                      )}, ${locationData.coordinates.lng.toFixed(6)}
                     </div>
                   </div>
-                  <div style="background: #3b82f6; color: white; padding: 6px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="navigator.clipboard?.writeText('${locationData.coordinates.lat.toFixed(6)}, ${locationData.coordinates.lng.toFixed(6)}'); alert('Coordinates copied!');">
+                  <div style="background: #3b82f6; color: white; padding: 6px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="navigator.clipboard?.writeText('${locationData.coordinates.lat.toFixed(
+                    6
+                  )}, ${locationData.coordinates.lng.toFixed(
+            6
+          )}'); alert('Coordinates copied!');">
                     📋 Copy
                   </div>
                 </div>
               </div>
 
-              ${locationData.created_date || locationData.last_updated ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
+              ${
+                locationData.created_date || locationData.last_updated
+                  ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e2e8f0;">
                 <div style="display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af;">
-                  ${locationData.created_date ? `<span>📅 Created: ${locationData.created_date}</span>` : ''}
-                  ${locationData.last_updated ? `<span>🔄 Updated: ${locationData.last_updated}</span>` : ''}
+                  ${
+                    locationData.created_date
+                      ? `<span>📅 Created: ${locationData.created_date}</span>`
+                      : ""
+                  }
+                  ${
+                    locationData.last_updated
+                      ? `<span>🔄 Updated: ${locationData.last_updated}</span>`
+                      : ""
+                  }
                 </div>
-              </div>` : ''}
+              </div>`
+                  : ""
+              }
             </div>
           </div>
         `,
-        pixelOffset: new google.maps.Size(0, -10)
-      });
+          pixelOffset: new google.maps.Size(0, -10)
+        });
 
-      // Add click listener to show info window
-      marker.addListener('click', () => {
-        infoWindow.open(mapInstance, marker);
-      });
+        // Add click listener to show info window
+        marker.addListener("click", () => {
+          infoWindow.open(mapInstance, marker);
+        });
 
-      // Pan to the new marker location
-      mapInstance.panTo({ lat: locationData.coordinates.lat, lng: locationData.coordinates.lng });
+        // Pan to the new marker location
+        mapInstance.panTo({
+          lat: locationData.coordinates.lat,
+          lng: locationData.coordinates.lng
+        });
 
-      // Optionally zoom to show the marker clearly
-      const currentZoom = mapInstance.getZoom();
-      if (currentZoom && currentZoom < 15) {
-        mapInstance.setZoom(15);
+        // Optionally zoom to show the marker clearly
+        const currentZoom = mapInstance.getZoom();
+        if (currentZoom && currentZoom < 15) {
+          mapInstance.setZoom(15);
+        }
       }
-    }
 
-    addNotification({
-      type: "success",
-      title: "Location Added",
-      message: `${locationData.name} has been added successfully with a map marker`,
-      duration: 4000
-    });
+      addNotification({
+        type: "success",
+        title: "Location Added",
+        message: `${locationData.name} has been added successfully with a map marker`,
+        duration: 4000
+      });
 
-    // You could update local state here or trigger a data refresh
-    // For example: refreshKMLData();
-  }, [addNotification, mapInstance]);
+      // You could update local state here or trigger a data refresh
+      // For example: refreshKMLData();
+    },
+    [addNotification, mapInstance]
+  );
 
   const render = (status: any) => {
     if (status === "LOADING") {
@@ -1020,7 +1108,6 @@ const ComprehensiveGoogleMapInterface: React.FC<
             onClose={() => setShowLayoutManager(false)}
           />
         )}
-
 
         {/* User Region Panel (Non-Admin) */}
         {!isAdmin && assignedStates.length > 0 && (

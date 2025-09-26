@@ -14,6 +14,7 @@ import { ConfirmDialog } from "../common/StandardDialog";
 import { Z_INDEX } from "../../constants/zIndex";
 import { LAYOUT_DIMENSIONS, TOOLBOX_POSITIONING } from "../../constants/layout";
 import { useStackedToolboxPositioning } from '../../hooks/useStackedToolboxPositioning';
+import { useDataStore } from "../../contexts/DataStoreContext";
 
 // Sidebar-aware positioning hook for consistent UI layout
 const useSidebarAwarePositioning = () => {
@@ -186,6 +187,9 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
   const [isDraggingVertex, setIsDraggingVertex] = useState(false);
   const { sidebarWidth } = useSidebarAwarePositioning();
   const { top: stackedTop, updateHeight } = useStackedToolboxPositioning('polygon-tool', isActive);
+
+  // DataStore hook for saving to global data manager
+  const { saveData } = useDataStore();
   const toolboxRef = useRef<HTMLDivElement>(null);
 
   // Notify parent when data changes
@@ -520,6 +524,46 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
     };
 
     setSavedPolygons((prev) => [...prev, polygon]);
+
+    // Also save to global DataStore for Data Manager integration
+    try {
+      await saveData({
+        name: polygon.name,
+        type: 'polygon',
+        description: `Polygon with ${polygon.vertices.length} vertices`,
+        category: 'Polygon Measurements',
+        tags: ['polygon', 'area', 'manual'],
+        data: {
+          points: polygon.vertices.map((vertex, index) => ({
+            id: `vertex_${index}`,
+            lat: vertex.lat,
+            lng: vertex.lng,
+            x: vertex.x,
+            y: vertex.y
+          })),
+          area: polygon.area,
+          perimeter: polygon.perimeter,
+          unit: 'metric', // Assuming metric units
+          center: {
+            lat: polygon.vertices.reduce((sum, v) => sum + v.lat, 0) / polygon.vertices.length,
+            lng: polygon.vertices.reduce((sum, v) => sum + v.lng, 0) / polygon.vertices.length
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Failed to save polygon to DataStore:', error);
+      // Show warning but don't prevent local save
+      const errorEvent = new CustomEvent("showNotification", {
+        detail: {
+          type: "warning",
+          title: "Data Manager Save Failed",
+          message: "Polygon saved locally but failed to save to Data Manager.",
+          duration: 4000
+        }
+      });
+      window.dispatchEvent(errorEvent);
+    }
+
     setCurrentPolygon([]);
     setNewPolygonName("");
   }, [
@@ -527,7 +571,8 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
     newPolygonName,
     savedPolygons.length,
     selectedColor.value,
-    currentPolygonStats
+    currentPolygonStats,
+    saveData
   ]);
 
   // Clear current polygon

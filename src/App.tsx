@@ -6,6 +6,7 @@ import { ThemeProvider } from './components/common/ThemeProvider';
 import { PanelManagerProvider } from './components/common/PanelManager';
 import { ModalProvider } from './components/common/ModalManager';
 import { NotificationProvider } from './components/common/NotificationManager';
+import { DataStoreProvider } from './contexts/DataStoreContext';
 import KeyboardShortcuts from './components/common/KeyboardShortcuts';
 import GlobalErrorBoundary from './components/common/GlobalErrorBoundary';
 import { handleResizeObserverError } from './utils/resizeObserverErrorHandler';
@@ -25,16 +26,18 @@ function App() {
   return (
     <GlobalErrorBoundary>
       <Provider store={store}>
-        <ThemeProvider>
-          <NotificationProvider>
-            <ModalProvider>
-              <PanelManagerProvider>
-                <KeyboardShortcuts />
-                <AppRouter />
-              </PanelManagerProvider>
-            </ModalProvider>
-          </NotificationProvider>
-        </ThemeProvider>
+        <DataStoreProvider>
+          <ThemeProvider>
+            <NotificationProvider>
+              <ModalProvider>
+                <PanelManagerProvider>
+                  <KeyboardShortcuts />
+                  <AppRouter />
+                </PanelManagerProvider>
+              </ModalProvider>
+            </NotificationProvider>
+          </ThemeProvider>
+        </DataStoreProvider>
       </Provider>
     </GlobalErrorBoundary>
   );
