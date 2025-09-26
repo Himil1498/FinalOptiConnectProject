@@ -9,10 +9,9 @@ interface GoogleMapProps {
   center: google.maps.LatLngLiteral;
   zoom: number;
   onMapReady?: (map: google.maps.Map) => void;
-  onClick?: (event: google.maps.MapMouseEvent) => void;
 }
 
-const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom, onMapReady, onClick }) => {
+const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom, onMapReady }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const { towers, layers } = useSelector((state: RootState) => state.map);
@@ -110,11 +109,6 @@ const GoogleMap: React.FC<GoogleMapProps> = ({ center, zoom, onMapReady, onClick
         // Add event listeners
         googleMapRef.current.addListener('center_changed', handleCenterChanged);
         googleMapRef.current.addListener('zoom_changed', handleZoomChanged);
-
-        // Add click event listener if onClick prop is provided
-        if (onClick) {
-          googleMapRef.current.addListener('click', onClick);
-        }
 
         // Call onMapReady callback if provided
         if (onMapReady) {
@@ -271,10 +265,9 @@ interface GoogleMapContainerProps {
   center?: [number, number];
   zoom?: number;
   onMapReady?: (map: google.maps.Map) => void;
-  onClick?: (event: google.maps.MapMouseEvent) => void;
 }
 
-const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({ center: propCenter, zoom: propZoom, onMapReady, onClick }) => {
+const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({ center: propCenter, zoom: propZoom, onMapReady }) => {
   const { center: reduxCenter, zoom: reduxZoom } = useSelector((state: RootState) => state.map);
 
   // Use props if provided, otherwise fallback to Redux state
@@ -321,7 +314,6 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({ center: propCen
         center={{ lat: center[0], lng: center[1] }}
         zoom={zoom}
         onMapReady={onMapReady}
-        onClick={onClick}
       />
     );
   };

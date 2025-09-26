@@ -7,7 +7,6 @@ interface KMLDataTabProps {
   manuallyAddedData: any[];
   kmlTypeFilter: 'all' | 'pop' | 'subPop';
   kmlSearchTerm: string;
-  isDark: boolean;
   map?: google.maps.Map | null;
   isSelectingLocation: boolean;
   showPOPData: boolean;
@@ -32,7 +31,6 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
   manuallyAddedData,
   kmlTypeFilter,
   kmlSearchTerm,
-  isDark,
   map,
   isSelectingLocation,
   showPOPData,
@@ -81,21 +79,21 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
       {/* Data Statistics */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className={`p-4 rounded-lg border ${
-          isDark ? 'bg-gray-700 border-gray-600' : 'bg-blue-50 border-blue-200'
+          'bg-blue-50 border-blue-200'
         }`}>
           <div className="flex items-center">
             <div className={`p-2 rounded-full ${
-              isDark ? 'bg-blue-900/50 text-blue-400' : 'bg-blue-100 text-blue-600'
+              'bg-blue-100 text-blue-600'
             }`}>
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className={`text-sm font-medium ${'text-gray-600'}`}>
                 Total Locations
               </p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <p className={`text-2xl font-bold ${'text-gray-900'}`}>
                 {filteredKMLData.length}
               </p>
             </div>
@@ -103,21 +101,21 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
         </div>
 
         <div className={`p-4 rounded-lg border ${
-          isDark ? 'bg-gray-700 border-gray-600' : 'bg-green-50 border-green-200'
+          'bg-green-50 border-green-200'
         }`}>
           <div className="flex items-center">
             <div className={`p-2 rounded-full ${
-              isDark ? 'bg-green-900/50 text-green-400' : 'bg-green-100 text-green-600'
+              'bg-green-100 text-green-600'
             }`}>
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className={`text-sm font-medium ${'text-gray-600'}`}>
                 Manually Added
               </p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <p className={`text-2xl font-bold ${'text-gray-900'}`}>
                 {manuallyAddedData.length}
               </p>
             </div>
@@ -125,21 +123,21 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
         </div>
 
         <div className={`p-4 rounded-lg border ${
-          isDark ? 'bg-gray-700 border-gray-600' : 'bg-purple-50 border-purple-200'
+          'bg-purple-50 border-purple-200'
         }`}>
           <div className="flex items-center">
             <div className={`p-2 rounded-full ${
-              isDark ? 'bg-purple-900/50 text-purple-400' : 'bg-purple-100 text-purple-600'
+              'bg-purple-100 text-purple-600'
             }`}>
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 6a2 2 0 104 0 2 2 0 00-4 0zm6 0a2 2 0 104 0 2 2 0 00-4 0z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className={`text-sm font-medium ${'text-gray-600'}`}>
                 From KML Files
               </p>
-              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <p className={`text-2xl font-bold ${'text-gray-900'}`}>
                 {kmlData.length}
               </p>
             </div>
@@ -149,10 +147,10 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
 
       {/* Map Layer Controls */}
       <div className={`p-6 rounded-lg border ${
-        isDark ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
+        'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'
       }`}>
         <h4 className={`text-lg font-semibold mb-4 ${
-          isDark ? 'text-white' : 'text-gray-900'
+          'text-gray-900'
         }`}>
           🗺️ Map Layer Visibility
         </h4>
@@ -161,11 +159,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
           {/* POP Layer Toggle */}
           <div className={`p-4 rounded-lg border transition-all duration-200 ${
             showPOPData
-              ? isDark
-                ? 'bg-blue-900/30 border-blue-700'
-                : 'bg-blue-100 border-blue-300'
-              : isDark
-                ? 'bg-gray-700 border-gray-600'
+                ? 'bg-blue-100 border-blue-300'
                 : 'bg-white border-gray-200'
           }`}>
             <label className="flex items-start cursor-pointer group">
@@ -178,9 +172,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                     className="sr-only peer"
                   />
                   <div className={`relative w-11 h-6 rounded-full transition-all duration-300 peer-focus:outline-none peer-focus:ring-4 ${
-                    isDark
-                      ? 'bg-gray-600 peer-checked:bg-blue-600 peer-focus:ring-blue-800'
-                      : 'bg-gray-200 peer-checked:bg-blue-600 peer-focus:ring-blue-300'
+                      'bg-gray-200 peer-checked:bg-blue-600 peer-focus:ring-blue-300'
                   }`}>
                     <div className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-all duration-300 ${
                       showPOPData ? 'translate-x-full border-white' : ''
@@ -195,12 +187,12 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                     <span className="text-2xl">📍</span>
                     <div>
                       <h5 className={`font-semibold ${
-                        isDark ? 'text-white' : 'text-gray-900'
+                        'text-gray-900'
                       }`}>
                         POP Locations
                       </h5>
                       <p className={`text-sm ${
-                        isDark ? 'text-gray-400' : 'text-gray-600'
+                        'text-gray-600'
                       }`}>
                         Point of Presence locations
                       </p>
@@ -209,7 +201,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                   <span className={`text-lg font-bold px-3 py-1 rounded-full ${
                     showPOPData
                       ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
-                      : isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-600'
+                      : 'bg-gray-100 text-gray-600'
                   }`}>
                     {kmlData.filter(item => item.type === 'pop').length}
                   </span>
@@ -229,11 +221,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
           {/* Sub POP Layer Toggle */}
           <div className={`p-4 rounded-lg border transition-all duration-200 ${
             showSubPOPData
-              ? isDark
-                ? 'bg-green-900/30 border-green-700'
-                : 'bg-green-100 border-green-300'
-              : isDark
-                ? 'bg-gray-700 border-gray-600'
+                ? 'bg-green-100 border-green-300'
                 : 'bg-white border-gray-200'
           }`}>
             <label className="flex items-start cursor-pointer group">
@@ -246,9 +234,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                     className="sr-only peer"
                   />
                   <div className={`relative w-11 h-6 rounded-full transition-all duration-300 peer-focus:outline-none peer-focus:ring-4 ${
-                    isDark
-                      ? 'bg-gray-600 peer-checked:bg-green-600 peer-focus:ring-green-800'
-                      : 'bg-gray-200 peer-checked:bg-green-600 peer-focus:ring-green-300'
+                      'bg-gray-200 peer-checked:bg-green-600 peer-focus:ring-green-300'
                   }`}>
                     <div className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-all duration-300 ${
                       showSubPOPData ? 'translate-x-full border-white' : ''
@@ -263,12 +249,12 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                     <span className="text-2xl">🏢</span>
                     <div>
                       <h5 className={`font-semibold ${
-                        isDark ? 'text-white' : 'text-gray-900'
+                        'text-gray-900'
                       }`}>
                         Sub POP Locations
                       </h5>
                       <p className={`text-sm ${
-                        isDark ? 'text-gray-400' : 'text-gray-600'
+                        'text-gray-600'
                       }`}>
                         Sub Point of Presence locations
                       </p>
@@ -277,7 +263,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                   <span className={`text-lg font-bold px-3 py-1 rounded-full ${
                     showSubPOPData
                       ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
-                      : isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-600'
+                      : 'bg-gray-100 text-gray-600'
                   }`}>
                     {kmlData.filter(item => item.type === 'subPop').length}
                   </span>
@@ -297,10 +283,10 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
 
         {/* Quick Info */}
         <div className={`mt-4 p-3 rounded-lg ${
-          isDark ? 'bg-gray-700/50' : 'bg-blue-50/50'
+          'bg-blue-50/50'
         }`}>
           <p className={`text-sm ${
-            isDark ? 'text-gray-400' : 'text-gray-600'
+            'text-gray-600'
           }`}>
             💡 <strong>Tip:</strong> Toggle these switches to show or hide POP and Sub POP locations on the map.
             The count shows how many locations of each type are available in your data.

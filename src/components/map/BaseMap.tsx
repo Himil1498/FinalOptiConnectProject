@@ -4,7 +4,6 @@ import MapControlsPanel from "./MapControlsPanel";
 import LiveCoordinateDisplay from "./LiveCoordinateDisplay";
 import LoadingSpinner from "../common/LoadingSpinner";
 import { Coordinates } from "../../types";
-import { validateGeofence } from '../../utils/unifiedGeofencing';
 
 interface BaseMapProps {
   center?: google.maps.LatLngLiteral;
@@ -126,31 +125,14 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
     const map = new google.maps.Map(mapRef.current, mapOptions);
     googleMapRef.current = map;
 
-    // Add click listener with geofencing validation
+    // Add click listener
     if (onMapClick) {
-      map.addListener("click", async (event: google.maps.MapMouseEvent) => {
+      map.addListener("click", (event: google.maps.MapMouseEvent) => {
         if (event.latLng) {
-          const lat = event.latLng.lat();
-          const lng = event.latLng.lng();
-
-          console.log('🎯 Base Map - Map clicked', { lat, lng });
-
-          // Validate coordinates are within India - STRICT ENFORCEMENT
-          const validation = await validateGeofence(lat, lng);
-          if (!validation.isValid) {
-            const notificationEvent = new CustomEvent("showNotification", {
-              detail: {
-                type: "error",
-                title: "Access Restricted",
-                message: validation.message || "Base map interactions can only be used within India boundaries.",
-                duration: 5000
-              }
-            });
-            window.dispatchEvent(notificationEvent);
-            return; // BLOCK base map interaction outside India
-          }
-
-          const coordinates: Coordinates = { lat, lng };
+          const coordinates: Coordinates = {
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng()
+          };
           onMapClick(coordinates);
         }
       });

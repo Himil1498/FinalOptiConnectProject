@@ -29,7 +29,6 @@ export interface MapToolsPanelProps {
   showLayoutManager: boolean;
   showWorkflowPresets: boolean;
   showKMLLayers: boolean;
-  showStreetView: boolean;
   onToolActivation: (toolName: string) => void;
   onTogglePanel: (panelName: string) => void;
 }

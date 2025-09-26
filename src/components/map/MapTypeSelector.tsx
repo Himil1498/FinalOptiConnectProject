@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { convertStringToMapTypeId } from '../../utils/unifiedGeofencing';
+import { convertStringToMapTypeId } from '../../utils/mapRestrictions';
 import {
   MapIcon,
   PhotoIcon,

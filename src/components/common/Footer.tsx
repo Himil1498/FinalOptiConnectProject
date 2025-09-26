@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   InformationCircleIcon,
   CogIcon,
   QuestionMarkCircleIcon,
   MapIcon,
   WifiIcon
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 interface FooterProps {
   isMapView?: boolean;
@@ -86,7 +86,9 @@ const Footer: React.FC<FooterProps> = ({
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
               <MapIcon className="h-4 w-4 text-blue-400 mr-2" />
-              <span className="text-sm font-medium text-gray-900">Telecom GIS Platform</span>
+              <span className="text-sm font-medium text-gray-900">
+                Opti Connect GIS Platform
+              </span>
             </div>
             <div className="flex items-center text-green-600">
               <WifiIcon className="h-3 w-3 mr-1" />
@@ -121,7 +123,9 @@ const Footer: React.FC<FooterProps> = ({
             <div className="flex items-center">
               <MapIcon className="h-5 w-5 text-blue-400 mr-2" />
               <div>
-                <span className="text-sm font-bold text-gray-900">Telecom GIS Platform</span>
+                <span className="text-sm font-bold text-gray-900">
+                  Opti Connect GIS Platform
+                </span>
                 <span className="text-xs text-gray-500 ml-2">v2.1.0</span>
               </div>
             </div>
@@ -169,8 +173,12 @@ const Footer: React.FC<FooterProps> = ({
           {/* Right Section - Legal & Collapse */}
           <div className="flex items-center space-x-4">
             <div className="hidden sm:flex items-center space-x-3 text-xs text-gray-500">
-              <button className="hover:text-gray-900 transition-colors">Privacy</button>
-              <button className="hover:text-gray-900 transition-colors">Terms</button>
+              <button className="hover:text-gray-900 transition-colors">
+                Privacy
+              </button>
+              <button className="hover:text-gray-900 transition-colors">
+                Terms
+              </button>
               <span>© {currentYear}</span>
             </div>
             <button

@@ -46,9 +46,12 @@
       "Bash(start http://localhost:3006)",
       "Bash(copy \"C:\\.HIMIL\\telecom-gis-platform\\src\\components\\map\\DistanceMeasurementTool.tsx\" \"C:\\.HIMIL\\telecom-gis-platform\\src\\components\\map\\DistanceMeasurementTool.backup.tsx\")",
       "Bash(PORT=3007 npm start)",
-      "Bash(PORT=3001 npm start)",
-      "Bash(PORT=3002 npm start)",
-      "Bash(start http://localhost:3002)"
+      "Bash(for file in \"InfrastructureAddForm.tsx\" \"KMLDataTab.tsx\" \"InfrastructureCategoriesTab.tsx\" \"InfrastructureReportsTab.tsx\")",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(for file in InfrastructureAddForm.tsx KMLDataTab.tsx InfrastructureCategoriesTab.tsx InfrastructureReportsTab.tsx)",
+      "Bash(tail:*)",
+      "Bash(for i in 82 86 93 96 104 108 115 118 126 130 137 140 150 153 162 165 179 196 201 210 230 233 247 264 269 278 298 301)",
+      "Bash(do sed -i \"$is/isDark ? ''[^'']*'' : //\" \"C:\\Users\\hkcha\\OneDrive\\Desktop\\FinalOptiConnectProject\\src\\components\\admin\\infrastructure\\KMLDataTab.tsx\")"
     ],
     "deny": [],
     "ask": []

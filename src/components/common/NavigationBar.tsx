@@ -13,7 +13,8 @@ import {
   ShieldCheckIcon,
   MapIcon,
   ChartBarIcon,
-  UsersIcon
+  UsersIcon,
+  FolderIcon
 } from "@heroicons/react/24/outline";
 import { SkipLink } from "./AccessibilityEnhancements";
 import MapSearchBox from "./MapSearchBox";
@@ -49,12 +50,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ mapInstance }) => {
       name: "Analytics",
       href: "/analytics",
       icon: ChartBarIcon
-    },
-    {
-      name: "Users",
-      href: "/users",
-      icon: UsersIcon,
-      roles: ["admin"]
     },
     {
       name: "Admin",
@@ -458,25 +453,23 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ mapInstance }) => {
 
                     <hr className="my-1 border-gray-200" />
 
-                    {location.pathname !== "/users" && (
-                      <div className="px-4 py-2">
-                        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                          <span>Theme</span>
-                          <button className="flex items-center space-x-1 bg-gray-100 rounded px-2 py-1 text-xs hover:bg-gray-200">
-                            <span>🌙</span>
-                            <span>Dark</span>
-                          </button>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>Language</span>
-                          <select className="text-xs bg-white border rounded px-1 py-0.5">
-                            <option>English</option>
-                            <option>हिंदी</option>
-                            <option>தமிழ்</option>
-                          </select>
-                        </div>
+                    <div className="px-4 py-2">
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span>Theme</span>
+                        <button className="flex items-center space-x-1 bg-gray-100 rounded px-2 py-1 text-xs hover:bg-gray-200">
+                          <span>🌙</span>
+                          <span>Dark</span>
+                        </button>
                       </div>
-                    )}
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>Language</span>
+                        <select className="text-xs bg-white border rounded px-1 py-0.5">
+                          <option>English</option>
+                          <option>हिंदी</option>
+                          <option>தமிழ்</option>
+                        </select>
+                      </div>
+                    </div>
 
                     <hr className="my-1 border-gray-200" />
 

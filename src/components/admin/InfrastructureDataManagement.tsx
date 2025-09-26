@@ -8,14 +8,12 @@ import {
 } from "../../hooks/useInfrastructureData";
 import { ExportUtils, ExportFormat } from "../../utils/exportUtils";
 import AddPOPLocationForm, { POPLocationData } from "../map/AddPOPLocationForm";
-import {
-  InfrastructureDataTable,
-  InfrastructureFilters,
-  InfrastructureAddForm,
-  KMLDataTab,
-  InfrastructureCategoriesTab,
-  InfrastructureReportsTab
-} from "./infrastructure";
+import InfrastructureDataTable from "./infrastructure/InfrastructureDataTable";
+import InfrastructureFilters from "./infrastructure/InfrastructureFilters";
+import InfrastructureAddForm from "./infrastructure/InfrastructureAddForm";
+import KMLDataTab from "./infrastructure/KMLDataTab";
+import InfrastructureCategoriesTab from "./infrastructure/InfrastructureCategoriesTab";
+import InfrastructureReportsTab from "./infrastructure/InfrastructureReportsTab";
 
 export interface InfrastructureDataManagementProps {
   isOpen: boolean;
@@ -295,14 +293,19 @@ const InfrastructureDataManagement: React.FC<
   }, [kmlData, kmlTypeFilter, kmlSearchTerm]);
 
   // POP and Sub POP data counts
-  const popData = useMemo(() => kmlData.filter(item => item.type === 'pop'), [kmlData]);
-  const subPopData = useMemo(() => kmlData.filter(item => item.type === 'subPop'), [kmlData]);
+  const popData = useMemo(
+    () => kmlData.filter((item) => item.type === "pop"),
+    [kmlData]
+  );
+  const subPopData = useMemo(
+    () => kmlData.filter((item) => item.type === "subPop"),
+    [kmlData]
+  );
 
   const manuallyAddedData = useMemo(
     () => kmlData.filter((item) => item.extendedData?.isManuallyAdded),
     [kmlData]
   );
-
 
   // ESC key handler
   useEffect(() => {
@@ -609,144 +612,202 @@ const InfrastructureDataManagement: React.FC<
 
   const handleExportItem = useCallback((item: any) => {
     setSelectedItem(item);
-    setExportType('single');
+    setExportType("single");
     setShowExportFormatModal(true);
   }, []);
 
-  const handleExportWithFormat = useCallback((format: string, items: any[] = []) => {
-    const exportItems = items.length > 0 ? items : [selectedItem].filter(Boolean);
-    const timestamp = new Date().toISOString().split('T')[0];
-    const filename = exportItems.length === 1
-      ? `${exportItems[0].name || 'location'}-${timestamp}`
-      : `infrastructure-export-${timestamp}`;
+  const handleExportWithFormat = useCallback(
+    (format: string, items: any[] = []) => {
+      const exportItems =
+        items.length > 0 ? items : [selectedItem].filter(Boolean);
+      const timestamp = new Date().toISOString().split("T")[0];
+      const filename =
+        exportItems.length === 1
+          ? `${exportItems[0].name || "location"}-${timestamp}`
+          : `infrastructure-export-${timestamp}`;
 
-    try {
-      switch (format) {
-        case 'csv':
-          exportToCSV(exportItems, filename);
-          break;
-        case 'xlsx':
-          exportToXLSX(exportItems, filename);
-          break;
-        case 'kml':
-          exportToKML(exportItems, filename);
-          break;
-        case 'kmz':
-          exportToKMZ(exportItems, filename);
-          break;
-        default:
-          throw new Error('Unsupported format');
+      try {
+        switch (format) {
+          case "csv":
+            exportToCSV(exportItems, filename);
+            break;
+          case "xlsx":
+            exportToXLSX(exportItems, filename);
+            break;
+          case "kml":
+            exportToKML(exportItems, filename);
+            break;
+          case "kmz":
+            exportToKMZ(exportItems, filename);
+            break;
+          default:
+            throw new Error("Unsupported format");
+        }
+
+        addNotification({
+          type: "success",
+          message: `📊 ${
+            exportItems.length
+          } item(s) exported as ${format.toUpperCase()}`,
+          duration: 3000
+        });
+      } catch (error) {
+        addNotification({
+          type: "error",
+          message: `Failed to export as ${format.toUpperCase()}`,
+          duration: 3000
+        });
       }
 
-      addNotification({
-        type: 'success',
-        message: `📊 ${exportItems.length} item(s) exported as ${format.toUpperCase()}`,
-        duration: 3000
-      });
-    } catch (error) {
-      addNotification({
-        type: 'error',
-        message: `Failed to export as ${format.toUpperCase()}`,
-        duration: 3000
-      });
-    }
-
-    setShowExportFormatModal(false);
-  }, [selectedItem, addNotification]);
+      setShowExportFormatModal(false);
+    },
+    [selectedItem, addNotification]
+  );
 
   const exportToCSV = useCallback((items: any[], filename: string) => {
-    const headers = ['Name', 'Type', 'Location', 'Latitude', 'Longitude', 'Status', 'Description', 'ID', 'UniqueID', 'NetworkID', 'RefCode', 'CreatedOn', 'UpdatedOn', 'Address', 'ContactName', 'ContactNo', 'IsRented', 'AgreementStartDate', 'AgreementEndDate', 'NatureOfBusiness', 'StructureType', 'UPSAvailability', 'BackupAvailability'];
+    const headers = [
+      "Name",
+      "Type",
+      "Location",
+      "Latitude",
+      "Longitude",
+      "Status",
+      "Description",
+      "ID",
+      "UniqueID",
+      "NetworkID",
+      "RefCode",
+      "CreatedOn",
+      "UpdatedOn",
+      "Address",
+      "ContactName",
+      "ContactNo",
+      "IsRented",
+      "AgreementStartDate",
+      "AgreementEndDate",
+      "NatureOfBusiness",
+      "StructureType",
+      "UPSAvailability",
+      "BackupAvailability"
+    ];
 
     const csvContent = [
-      headers.join(','),
-      ...items.map(item => [
-        `"${item.name || ''}"`,
-        `"${item.type || ''}"`,
-        `"${item.location || ''}"`,
-        item.coordinates?.lat || item.lat || '',
-        item.coordinates?.lng || item.lng || '',
-        `"${item.extendedData?.status || item.status || ''}"`,
-        `"${item.description || ''}"`,
-        `"${item.id || ''}"`,
-        `"${item.extendedData?.uniqueId || ''}"`,
-        `"${item.extendedData?.networkId || ''}"`,
-        `"${item.extendedData?.refCode || ''}"`,
-        `"${item.extendedData?.createdOn || item.createdDate || ''}"`,
-        `"${item.extendedData?.updatedOn || item.lastUpdated || ''}"`,
-        `"${item.extendedData?.address || ''}"`,
-        `"${item.extendedData?.contactName || ''}"`,
-        `"${item.extendedData?.contactNo || ''}"`,
-        `"${item.extendedData?.isRented || ''}"`,
-        `"${item.extendedData?.agreementStartDate || ''}"`,
-        `"${item.extendedData?.agreementEndDate || ''}"`,
-        `"${item.extendedData?.natureOfBusiness || ''}"`,
-        `"${item.extendedData?.structureType || ''}"`,
-        `"${item.extendedData?.upsAvailability || ''}"`,
-        `"${item.extendedData?.backupAvailability || ''}"`
-      ].join(','))
-    ].join('\n');
+      headers.join(","),
+      ...items.map((item) =>
+        [
+          `"${item.name || ""}"`,
+          `"${item.type || ""}"`,
+          `"${item.location || ""}"`,
+          item.coordinates?.lat || item.lat || "",
+          item.coordinates?.lng || item.lng || "",
+          `"${item.extendedData?.status || item.status || ""}"`,
+          `"${item.description || ""}"`,
+          `"${item.id || ""}"`,
+          `"${item.extendedData?.uniqueId || ""}"`,
+          `"${item.extendedData?.networkId || ""}"`,
+          `"${item.extendedData?.refCode || ""}"`,
+          `"${item.extendedData?.createdOn || item.createdDate || ""}"`,
+          `"${item.extendedData?.updatedOn || item.lastUpdated || ""}"`,
+          `"${item.extendedData?.address || ""}"`,
+          `"${item.extendedData?.contactName || ""}"`,
+          `"${item.extendedData?.contactNo || ""}"`,
+          `"${item.extendedData?.isRented || ""}"`,
+          `"${item.extendedData?.agreementStartDate || ""}"`,
+          `"${item.extendedData?.agreementEndDate || ""}"`,
+          `"${item.extendedData?.natureOfBusiness || ""}"`,
+          `"${item.extendedData?.structureType || ""}"`,
+          `"${item.extendedData?.upsAvailability || ""}"`,
+          `"${item.extendedData?.backupAvailability || ""}"`
+        ].join(",")
+      )
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${filename}.csv`;
     link.click();
   }, []);
 
   const exportToXLSX = useCallback((items: any[], filename: string) => {
-    const headers = ['Name', 'Type', 'Location', 'Latitude', 'Longitude', 'Status', 'Description', 'ID', 'UniqueID', 'NetworkID', 'RefCode', 'CreatedOn', 'UpdatedOn', 'Address', 'ContactName', 'ContactNo', 'IsRented', 'AgreementStartDate', 'AgreementEndDate', 'NatureOfBusiness', 'StructureType', 'UPSAvailability', 'BackupAvailability'];
+    const headers = [
+      "Name",
+      "Type",
+      "Location",
+      "Latitude",
+      "Longitude",
+      "Status",
+      "Description",
+      "ID",
+      "UniqueID",
+      "NetworkID",
+      "RefCode",
+      "CreatedOn",
+      "UpdatedOn",
+      "Address",
+      "ContactName",
+      "ContactNo",
+      "IsRented",
+      "AgreementStartDate",
+      "AgreementEndDate",
+      "NatureOfBusiness",
+      "StructureType",
+      "UPSAvailability",
+      "BackupAvailability"
+    ];
 
     let xlsxContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xlsxContent += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet">\n';
+    xlsxContent +=
+      '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet">\n';
     xlsxContent += '<Worksheet ss:Name="Infrastructure Data">\n';
-    xlsxContent += '<Table>\n';
+    xlsxContent += "<Table>\n";
 
     // Header row
-    xlsxContent += '<Row>\n';
-    headers.forEach(header => {
+    xlsxContent += "<Row>\n";
+    headers.forEach((header) => {
       xlsxContent += `<Cell><Data ss:Type="String">${header}</Data></Cell>\n`;
     });
-    xlsxContent += '</Row>\n';
+    xlsxContent += "</Row>\n";
 
     // Data rows
-    items.forEach(item => {
-      xlsxContent += '<Row>\n';
+    items.forEach((item) => {
+      xlsxContent += "<Row>\n";
       const values = [
-        item.name || '',
-        item.type || '',
-        item.location || '',
-        item.coordinates?.lat || item.lat || '',
-        item.coordinates?.lng || item.lng || '',
-        item.extendedData?.status || item.status || '',
-        item.description || '',
-        item.id || '',
-        item.extendedData?.uniqueId || '',
-        item.extendedData?.networkId || '',
-        item.extendedData?.refCode || '',
-        item.extendedData?.createdOn || item.createdDate || '',
-        item.extendedData?.updatedOn || item.lastUpdated || '',
-        item.extendedData?.address || '',
-        item.extendedData?.contactName || '',
-        item.extendedData?.contactNo || '',
-        item.extendedData?.isRented || '',
-        item.extendedData?.agreementStartDate || '',
-        item.extendedData?.agreementEndDate || '',
-        item.extendedData?.natureOfBusiness || '',
-        item.extendedData?.structureType || '',
-        item.extendedData?.upsAvailability || '',
-        item.extendedData?.backupAvailability || ''
+        item.name || "",
+        item.type || "",
+        item.location || "",
+        item.coordinates?.lat || item.lat || "",
+        item.coordinates?.lng || item.lng || "",
+        item.extendedData?.status || item.status || "",
+        item.description || "",
+        item.id || "",
+        item.extendedData?.uniqueId || "",
+        item.extendedData?.networkId || "",
+        item.extendedData?.refCode || "",
+        item.extendedData?.createdOn || item.createdDate || "",
+        item.extendedData?.updatedOn || item.lastUpdated || "",
+        item.extendedData?.address || "",
+        item.extendedData?.contactName || "",
+        item.extendedData?.contactNo || "",
+        item.extendedData?.isRented || "",
+        item.extendedData?.agreementStartDate || "",
+        item.extendedData?.agreementEndDate || "",
+        item.extendedData?.natureOfBusiness || "",
+        item.extendedData?.structureType || "",
+        item.extendedData?.upsAvailability || "",
+        item.extendedData?.backupAvailability || ""
       ];
 
-      values.forEach(value => {
+      values.forEach((value) => {
         xlsxContent += `<Cell><Data ss:Type="String">${value}</Data></Cell>\n`;
       });
-      xlsxContent += '</Row>\n';
+      xlsxContent += "</Row>\n";
     });
 
-    xlsxContent += '</Table>\n</Worksheet>\n</Workbook>';
+    xlsxContent += "</Table>\n</Worksheet>\n</Workbook>";
 
-    const blob = new Blob([xlsxContent], { type: 'application/vnd.ms-excel' });
-    const link = document.createElement('a');
+    const blob = new Blob([xlsxContent], { type: "application/vnd.ms-excel" });
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${filename}.xlsx`;
     link.click();
@@ -758,26 +819,42 @@ const InfrastructureDataManagement: React.FC<
   <Document>
     <name>Infrastructure Data Export</name>
     <description>Exported infrastructure locations</description>
-${items.map(item => `    <Placemark>
-      <name>${item.name || 'Unnamed Location'}</name>
+${items
+  .map(
+    (item) => `    <Placemark>
+      <name>${item.name || "Unnamed Location"}</name>
       <description><![CDATA[
-        <h3>${item.name || 'Unnamed Location'}</h3>
-        <p><strong>Type:</strong> ${item.type || 'N/A'}</p>
-        <p><strong>Status:</strong> ${item.extendedData?.status || item.status || 'Unknown'}</p>
-        <p><strong>Description:</strong> ${item.description || 'No description available'}</p>
-        <p><strong>ID:</strong> ${item.id || 'N/A'}</p>
-        <p><strong>Created:</strong> ${item.extendedData?.createdOn || item.createdDate || 'N/A'}</p>
-        <p><strong>Updated:</strong> ${item.extendedData?.updatedOn || item.lastUpdated || 'N/A'}</p>
+        <h3>${item.name || "Unnamed Location"}</h3>
+        <p><strong>Type:</strong> ${item.type || "N/A"}</p>
+        <p><strong>Status:</strong> ${
+          item.extendedData?.status || item.status || "Unknown"
+        }</p>
+        <p><strong>Description:</strong> ${
+          item.description || "No description available"
+        }</p>
+        <p><strong>ID:</strong> ${item.id || "N/A"}</p>
+        <p><strong>Created:</strong> ${
+          item.extendedData?.createdOn || item.createdDate || "N/A"
+        }</p>
+        <p><strong>Updated:</strong> ${
+          item.extendedData?.updatedOn || item.lastUpdated || "N/A"
+        }</p>
       ]]></description>
       <Point>
-        <coordinates>${item.coordinates?.lng || item.lng || 0},${item.coordinates?.lat || item.lat || 0},0</coordinates>
+        <coordinates>${item.coordinates?.lng || item.lng || 0},${
+      item.coordinates?.lat || item.lat || 0
+    },0</coordinates>
       </Point>
-    </Placemark>`).join('\n')}
+    </Placemark>`
+  )
+  .join("\n")}
   </Document>
 </kml>`;
 
-    const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
-    const link = document.createElement('a');
+    const blob = new Blob([kmlContent], {
+      type: "application/vnd.google-earth.kml+xml"
+    });
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${filename}.kml`;
     link.click();
@@ -789,25 +866,39 @@ ${items.map(item => `    <Placemark>
   <Document>
     <name>Infrastructure Data Export (KMZ)</name>
     <description>Compressed KML export of infrastructure locations</description>
-${items.map(item => `    <Placemark>
-      <name>${item.name || 'Unnamed Location'}</name>
+${items
+  .map(
+    (item) => `    <Placemark>
+      <name>${item.name || "Unnamed Location"}</name>
       <description><![CDATA[
-        <h3>${item.name || 'Unnamed Location'}</h3>
-        <p><strong>Type:</strong> ${item.type || 'N/A'}</p>
-        <p><strong>Status:</strong> ${item.extendedData?.status || item.status || 'Unknown'}</p>
-        <p><strong>Description:</strong> ${item.description || 'No description available'}</p>
-        <p><strong>Contact:</strong> ${item.extendedData?.contactName || 'N/A'} (${item.extendedData?.contactNo || 'N/A'})</p>
-        <p><strong>Address:</strong> ${item.extendedData?.address || 'N/A'}</p>
+        <h3>${item.name || "Unnamed Location"}</h3>
+        <p><strong>Type:</strong> ${item.type || "N/A"}</p>
+        <p><strong>Status:</strong> ${
+          item.extendedData?.status || item.status || "Unknown"
+        }</p>
+        <p><strong>Description:</strong> ${
+          item.description || "No description available"
+        }</p>
+        <p><strong>Contact:</strong> ${
+          item.extendedData?.contactName || "N/A"
+        } (${item.extendedData?.contactNo || "N/A"})</p>
+        <p><strong>Address:</strong> ${item.extendedData?.address || "N/A"}</p>
       ]]></description>
       <Point>
-        <coordinates>${item.coordinates?.lng || item.lng || 0},${item.coordinates?.lat || item.lat || 0},0</coordinates>
+        <coordinates>${item.coordinates?.lng || item.lng || 0},${
+      item.coordinates?.lat || item.lat || 0
+    },0</coordinates>
       </Point>
-    </Placemark>`).join('\n')}
+    </Placemark>`
+  )
+  .join("\n")}
   </Document>
 </kml>`;
 
-    const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kmz' });
-    const link = document.createElement('a');
+    const blob = new Blob([kmlContent], {
+      type: "application/vnd.google-earth.kmz"
+    });
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${filename}.kmz`;
     link.click();
@@ -941,17 +1032,11 @@ ${items.map(item => `    <Placemark>
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div
-        className="w-full max-w-7xl h-full max-h-[90vh] rounded-lg shadow-xl overflow-auto toolbox-scrollbar bg-white"
-      >
+      <div className="w-full max-w-7xl h-full max-h-[90vh] rounded-lg shadow-xl overflow-auto toolbox-scrollbar bg-white">
         {/* Header */}
-        <div
-          className="px-6 py-4 border-b flex items-center justify-between border-gray-200"
-        >
+        <div className="px-6 py-4 border-b flex items-center justify-between border-gray-200">
           <div className="flex items-center space-x-3">
-            <div
-              className="p-2 rounded-lg bg-blue-100 text-blue-600"
-            >
+            <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
@@ -961,18 +1046,10 @@ ${items.map(item => `    <Placemark>
               </svg>
             </div>
             <div>
-              <h2
-                className={`text-xl font-semibold ${
-                  "text-gray-900"
-                }`}
-              >
+              <h2 className={`text-xl font-semibold ${"text-gray-900"}`}>
                 Infrastructure Data Management
               </h2>
-              <p
-                className={`text-sm ${
-                  "text-gray-500"
-                }`}
-              >
+              <p className={`text-sm ${"text-gray-500"}`}>
                 📋 Manage telecom infrastructure with manual entry, coordinate
                 input, and visualization
               </p>
@@ -999,9 +1076,7 @@ ${items.map(item => `    <Placemark>
         </div>
 
         {/* Tabs */}
-        <div
-          className="px-6 border-b border-gray-200"
-        >
+        <div className="px-6 border-b border-gray-200">
           <nav className="flex space-x-8">
             {tabs.map((tab) => (
               <button
@@ -1077,7 +1152,6 @@ ${items.map(item => `    <Placemark>
           {activeTab === "categories" && (
             <InfrastructureCategoriesTab
               categories={categories}
-              isDark={false}
             />
           )}
 
@@ -1085,7 +1159,6 @@ ${items.map(item => `    <Placemark>
           {activeTab === "reports" && (
             <InfrastructureReportsTab
               dataLength={allData.length}
-              isDark={false}
             />
           )}
 
@@ -1118,7 +1191,6 @@ ${items.map(item => `    <Placemark>
               onAddManually={handleAddManually}
               onCancelLocationSelection={handleCancelLocationSelection}
               highlightSearchTerm={highlightSearchTerm}
-              isDark={false}
             />
           )}
         </div>
@@ -1136,38 +1208,66 @@ ${items.map(item => `    <Placemark>
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="px-6 py-4 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">Location Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Location Details
+                </h3>
               </div>
               <div className="px-6 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Name</label>
-                    <p className="text-sm text-gray-900">{selectedItem.name || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-700">
+                      Name
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedItem.name || "N/A"}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Type</label>
-                    <p className="text-sm text-gray-900">{selectedItem.type || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-700">
+                      Type
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedItem.type || "N/A"}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Latitude</label>
-                    <p className="text-sm text-gray-900">{selectedItem.latitude || selectedItem.lat || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-700">
+                      Latitude
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedItem.latitude || selectedItem.lat || "N/A"}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Longitude</label>
-                    <p className="text-sm text-gray-900">{selectedItem.longitude || selectedItem.lng || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-700">
+                      Longitude
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedItem.longitude || selectedItem.lng || "N/A"}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Description</label>
-                    <p className="text-sm text-gray-900">{selectedItem.description || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-700">
+                      Description
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedItem.description || "N/A"}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Status</label>
-                    <p className="text-sm text-gray-900">{selectedItem.status || 'Active'}</p>
+                    <label className="text-sm font-medium text-gray-700">
+                      Status
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {selectedItem.status || "Active"}
+                    </p>
                   </div>
                 </div>
                 {selectedItem.properties && (
                   <div className="mt-4">
-                    <label className="text-sm font-medium text-gray-700">Additional Properties</label>
+                    <label className="text-sm font-medium text-gray-700">
+                      Additional Properties
+                    </label>
                     <pre className="mt-1 text-xs bg-gray-100 p-2 rounded overflow-auto">
                       {JSON.stringify(selectedItem.properties, null, 2)}
                     </pre>
@@ -1197,39 +1297,51 @@ ${items.map(item => `    <Placemark>
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
               <div className="px-6 py-4 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">Export Data</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Export Data
+                </h3>
               </div>
               <div className="p-6">
                 <p className="text-sm text-gray-600 mb-4">
-                  Choose export format for {exportType === 'single' ? '1 item' : `${selectedItems.length || 'selected'} items`}:
+                  Choose export format for{" "}
+                  {exportType === "single"
+                    ? "1 item"
+                    : `${selectedItems.length || "selected"} items`}
+                  :
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    onClick={() => handleExportWithFormat('csv')}
+                    onClick={() => handleExportWithFormat("csv")}
                     className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-center transition-colors"
                   >
                     <div className="text-2xl mb-2">📊</div>
                     <div className="text-sm font-medium text-gray-900">CSV</div>
-                    <div className="text-xs text-gray-500">Spreadsheet format</div>
+                    <div className="text-xs text-gray-500">
+                      Spreadsheet format
+                    </div>
                   </button>
                   <button
-                    onClick={() => handleExportWithFormat('xlsx')}
+                    onClick={() => handleExportWithFormat("xlsx")}
                     className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-center transition-colors"
                   >
                     <div className="text-2xl mb-2">📋</div>
-                    <div className="text-sm font-medium text-gray-900">XLSX</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      XLSX
+                    </div>
                     <div className="text-xs text-gray-500">Excel format</div>
                   </button>
                   <button
-                    onClick={() => handleExportWithFormat('kml')}
+                    onClick={() => handleExportWithFormat("kml")}
                     className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-center transition-colors"
                   >
                     <div className="text-2xl mb-2">🗺️</div>
                     <div className="text-sm font-medium text-gray-900">KML</div>
-                    <div className="text-xs text-gray-500">Google Earth format</div>
+                    <div className="text-xs text-gray-500">
+                      Google Earth format
+                    </div>
                   </button>
                   <button
-                    onClick={() => handleExportWithFormat('kmz')}
+                    onClick={() => handleExportWithFormat("kmz")}
                     className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-center transition-colors"
                   >
                     <div className="text-2xl mb-2">📦</div>

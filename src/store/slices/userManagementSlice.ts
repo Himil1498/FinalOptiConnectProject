@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { User, UserGroup, GroupMember } from '../../types';
-import { UserRegionConfig } from '../../utils/userRegionManagement';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { User, UserGroup, GroupMember } from "../../types";
+import { UserRegionConfig } from "../../utils/userRegionManagement";
 
 interface UserManagementState {
   // Users
@@ -39,9 +39,9 @@ interface UserManagementState {
 
   // Filters and Search
   filters: {
-    role: User['role'] | 'all';
-    department: string | 'all';
-    status: 'active' | 'inactive' | 'all';
+    role: User["role"] | "all";
+    department: string | "all";
+    status: "active" | "inactive" | "all";
     assignedStates: string[];
   };
   searchTerm: string;
@@ -65,24 +65,30 @@ const initialState: UserManagementState = {
     regions: false,
     creating: false,
     updating: false,
-    deleting: false,
+    deleting: false
   },
   error: null,
   filters: {
-    role: 'all',
-    department: 'all',
-    status: 'all',
-    assignedStates: [],
+    role: "all",
+    department: "all",
+    status: "all",
+    assignedStates: []
   },
-  searchTerm: '',
+  searchTerm: ""
 };
 
 const userManagementSlice = createSlice({
-  name: 'userManagement',
+  name: "userManagement",
   initialState,
   reducers: {
     // Loading states
-    setLoading: (state, action: PayloadAction<{ type: keyof UserManagementState['loading']; loading: boolean }>) => {
+    setLoading: (
+      state,
+      action: PayloadAction<{
+        type: keyof UserManagementState["loading"];
+        loading: boolean;
+      }>
+    ) => {
       state.loading[action.payload.type] = action.payload.loading;
     },
 
@@ -103,7 +109,9 @@ const userManagementSlice = createSlice({
     },
 
     updateUser: (state, action: PayloadAction<User>) => {
-      const index = state.users.findIndex(user => user.id === action.payload.id);
+      const index = state.users.findIndex(
+        (user) => user.id === action.payload.id
+      );
       if (index !== -1) {
         state.users[index] = action.payload;
       }
@@ -113,7 +121,7 @@ const userManagementSlice = createSlice({
     },
 
     deleteUser: (state, action: PayloadAction<string>) => {
-      state.users = state.users.filter(user => user.id !== action.payload);
+      state.users = state.users.filter((user) => user.id !== action.payload);
       // Also remove from region configs
       delete state.userRegionConfigs[action.payload];
       state.loading.deleting = false;
@@ -137,7 +145,9 @@ const userManagementSlice = createSlice({
     },
 
     updateUserGroup: (state, action: PayloadAction<UserGroup>) => {
-      const index = state.userGroups.findIndex(group => group.id === action.payload.id);
+      const index = state.userGroups.findIndex(
+        (group) => group.id === action.payload.id
+      );
       if (index !== -1) {
         state.userGroups[index] = action.payload;
       }
@@ -147,13 +157,20 @@ const userManagementSlice = createSlice({
     },
 
     deleteUserGroup: (state, action: PayloadAction<string>) => {
-      state.userGroups = state.userGroups.filter(group => group.id !== action.payload);
+      state.userGroups = state.userGroups.filter(
+        (group) => group.id !== action.payload
+      );
       // Also remove group memberships
-      state.groupMembers = state.groupMembers.filter(member => member.groupId !== action.payload);
+      state.groupMembers = state.groupMembers.filter(
+        (member) => member.groupId !== action.payload
+      );
       state.loading.deleting = false;
     },
 
-    setCurrentEditingGroup: (state, action: PayloadAction<UserGroup | null>) => {
+    setCurrentEditingGroup: (
+      state,
+      action: PayloadAction<UserGroup | null>
+    ) => {
       state.currentEditingGroup = action.payload;
       state.isEditingGroup = action.payload !== null;
     },
@@ -166,33 +183,50 @@ const userManagementSlice = createSlice({
     addGroupMember: (state, action: PayloadAction<GroupMember>) => {
       state.groupMembers.push(action.payload);
       // Update group member count
-      const group = state.userGroups.find(g => g.id === action.payload.groupId);
+      const group = state.userGroups.find(
+        (g) => g.id === action.payload.groupId
+      );
       if (group) {
         group.memberCount += 1;
       }
     },
 
-    removeGroupMember: (state, action: PayloadAction<{ userId: string; groupId: string }>) => {
+    removeGroupMember: (
+      state,
+      action: PayloadAction<{ userId: string; groupId: string }>
+    ) => {
       state.groupMembers = state.groupMembers.filter(
-        member => !(member.userId === action.payload.userId && member.groupId === action.payload.groupId)
+        (member) =>
+          !(
+            member.userId === action.payload.userId &&
+            member.groupId === action.payload.groupId
+          )
       );
       // Update group member count
-      const group = state.userGroups.find(g => g.id === action.payload.groupId);
+      const group = state.userGroups.find(
+        (g) => g.id === action.payload.groupId
+      );
       if (group) {
         group.memberCount = Math.max(0, group.memberCount - 1);
       }
     },
 
     // User Region Configs
-    setUserRegionConfigs: (state, action: PayloadAction<Record<string, UserRegionConfig>>) => {
+    setUserRegionConfigs: (
+      state,
+      action: PayloadAction<Record<string, UserRegionConfig>>
+    ) => {
       state.userRegionConfigs = action.payload;
       state.loading.regions = false;
     },
 
-    setUserRegionConfig: (state, action: PayloadAction<{ userId: string; config: UserRegionConfig }>) => {
+    setUserRegionConfig: (
+      state,
+      action: PayloadAction<{ userId: string; config: UserRegionConfig }>
+    ) => {
       state.userRegionConfigs[action.payload.userId] = action.payload.config;
       // Also update the user's assignedStates
-      const user = state.users.find(u => u.id === action.payload.userId);
+      const user = state.users.find((u) => u.id === action.payload.userId);
       if (user) {
         user.assignedStates = action.payload.config.assignedStates;
       }
@@ -223,7 +257,10 @@ const userManagementSlice = createSlice({
     },
 
     // Filters and Search
-    setFilters: (state, action: PayloadAction<Partial<UserManagementState['filters']>>) => {
+    setFilters: (
+      state,
+      action: PayloadAction<Partial<UserManagementState["filters"]>>
+    ) => {
       state.filters = { ...state.filters, ...action.payload };
     },
 
@@ -233,7 +270,7 @@ const userManagementSlice = createSlice({
 
     clearFilters: (state) => {
       state.filters = initialState.filters;
-      state.searchTerm = '';
+      state.searchTerm = "";
     },
 
     // Reset states
@@ -243,8 +280,8 @@ const userManagementSlice = createSlice({
 
     resetUserManagement: (state) => {
       return initialState;
-    },
-  },
+    }
+  }
 });
 
 export const {
@@ -273,7 +310,7 @@ export const {
   setSearchTerm,
   clearFilters,
   resetError,
-  resetUserManagement,
+  resetUserManagement
 } = userManagementSlice.actions;
 
 export default userManagementSlice.reducer;

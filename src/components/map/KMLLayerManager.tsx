@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { useKMLLayers, KMLLayerConfig } from '../../hooks/useKMLLayers';
 import AddPOPLocationForm, { POPLocationData } from './AddPOPLocationForm';
-import { validateGeofence } from '../../utils/unifiedGeofencing';
 
 interface KMLLayerManagerProps {
   map: google.maps.Map | null;
@@ -17,7 +16,6 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
   onDataLoaded,
   onLocationAdd
 }) => {
-  const { uiState } = useTheme();
   const [showAddForm, setShowAddForm] = useState(false);
   const [mapClickListener, setMapClickListener] = useState<google.maps.MapsEventListener | null>(null);
   const [pendingCoordinates, setPendingCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -67,44 +65,17 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
 
     setIsSelectingLocation(true);
 
-    // Add click listener to map with geofencing validation
-    const listener = map.addListener('click', async (event: google.maps.MapMouseEvent) => {
+    // Add click listener to map
+    const listener = map.addListener('click', (event: google.maps.MapMouseEvent) => {
       if (event.latLng) {
-        const lat = event.latLng.lat();
-        const lng = event.latLng.lng();
+        const coordinates = {
+          lat: event.latLng.lat(),
+          lng: event.latLng.lng()
+        };
 
-        console.log('🎯 KML Manager - Map clicked', { lat, lng });
-
-        // Validate coordinates are within India - STRICT ENFORCEMENT
-        const validation = await validateGeofence(lat, lng);
-        if (!validation.isValid) {
-          const notificationEvent = new CustomEvent("showNotification", {
-            detail: {
-              type: "error",
-              title: "Access Restricted",
-              message: validation.message || "KML location selection can only be used within India boundaries.",
-              duration: 5000
-            }
-          });
-          window.dispatchEvent(notificationEvent);
-          return; // BLOCK location selection outside India
-        }
-
-        const coordinates = { lat, lng };
         setPendingCoordinates(coordinates);
         setShowAddForm(true);
         setIsSelectingLocation(false);
-
-        // Show success notification
-        const successEvent = new CustomEvent('showNotification', {
-          detail: {
-            type: 'success',
-            title: 'Location Selected',
-            message: `Location selected within India boundaries`,
-            duration: 2000
-          }
-        });
-        window.dispatchEvent(successEvent);
 
         // Remove the click listener
         if (mapClickListener) {
@@ -146,12 +117,12 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
     handleCancelLocationSelection();
   };
 
-  const isDark = uiState.theme.mode === 'dark';
+  
 
   if (loading) {
     return (
       <div className={`kml-layer-manager p-4 rounded-lg shadow-lg ${
-        isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+        false ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
       }`}>
         <div className="flex items-center justify-center space-x-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -164,7 +135,7 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
   if (error) {
     return (
       <div className={`kml-layer-manager p-4 rounded-lg shadow-lg ${
-        isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+        false ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
       }`}>
         <div className="text-red-600 text-sm">
           <p className="font-medium">Error loading KML data:</p>
@@ -176,7 +147,7 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
 
   return (
     <div className={`kml-layer-manager p-4 rounded-lg shadow-lg ${
-      isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+      false ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
     }`}>
       <div className="mb-3">
         <h3 className="text-lg font-semibold mb-3">Infrastructure Layers</h3>
@@ -229,7 +200,7 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
 
         {/* Add New Location Section */}
         <div className={`mt-4 p-3 rounded border-t ${
-          isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+          false ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
         }`}>
           <h4 className="text-sm font-medium mb-3">Add New Location</h4>
 
@@ -241,7 +212,7 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
               <button
                 onClick={handleCancelLocationSelection}
                 className={`w-full px-3 py-2 text-xs rounded border ${
-                  isDark
+                  false
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-600'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-100'
                 }`}
@@ -254,7 +225,7 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
               <button
                 onClick={handleSelectLocationFromMap}
                 className={`w-full px-3 py-2 text-xs rounded ${
-                  isDark
+                  false
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-blue-500 text-white hover:bg-blue-600'
                 }`}
@@ -264,7 +235,7 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
               <button
                 onClick={handleAddManually}
                 className={`w-full px-3 py-2 text-xs rounded border ${
-                  isDark
+                  false
                     ? 'border-gray-600 text-gray-300 hover:bg-gray-600'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-100'
                 }`}
@@ -278,7 +249,7 @@ const KMLLayerManager: React.FC<KMLLayerManagerProps> = ({
         {/* Layer Info */}
         {(isLayerVisible('pop') || isLayerVisible('subPop')) && (
           <div className={`mt-4 p-3 rounded ${
-            isDark ? 'bg-gray-700' : 'bg-gray-50'
+            false ? 'bg-gray-700' : 'bg-gray-50'
           }`}>
             <p className="text-xs text-gray-600 dark:text-gray-400">
               Click on markers to view detailed information about each location.

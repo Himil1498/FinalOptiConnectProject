@@ -1,13 +1,20 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  loadIndiaStatesData,
-  isPointInAssignedStates,
-  validateGeofence,
-  createUserGeofenceConfig,
-  isPointInGeometry,
-  type StateFeature,
-  type IndiaGeoData
-} from '../../utils/unifiedGeofencing';
+
+interface StateFeature {
+  type: 'Feature';
+  properties: {
+    st_nm: string;
+  };
+  geometry: {
+    type: 'MultiPolygon';
+    coordinates: number[][][][];
+  };
+}
+
+interface IndiaGeoData {
+  type: 'FeatureCollection';
+  features: StateFeature[];
+}
 
 interface GeofencingSystemProps {
   assignedStates: string[];
@@ -29,11 +36,12 @@ const GeofencingSystem: React.FC<GeofencingSystemProps> = ({
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
 
-  // Load India GeoJSON data using unified system
+  // Load India GeoJSON data
   useEffect(() => {
     const loadGeoData = async () => {
       try {
-        const data = await loadIndiaStatesData();
+        const response = await fetch('/india.json');
+        const data: IndiaGeoData = await response.json();
         setGeoData(data);
       } catch (error) {
         console.error('Error loading geo data:', error);
@@ -103,7 +111,7 @@ const GeofencingSystem: React.FC<GeofencingSystemProps> = ({
 
     for (const feature of geoData.features) {
       if (assignedStates.includes(feature.properties.st_nm)) {
-        if (isPointInGeometry(point, feature.geometry)) {
+        if (isPointInMultiPolygon(point, feature.geometry.coordinates)) {
           return true;
         }
       }
@@ -141,12 +149,12 @@ const GeofencingSystem: React.FC<GeofencingSystemProps> = ({
     );
   }, [geoData, assignedStates]);
 
-  // Convert polygon/multipolygon coordinates to SVG path
-  const geometryToPath = useCallback((geometry: StateFeature['geometry']) => {
+  // Convert multipolygon coordinates to SVG path
+  const multiPolygonToPath = useCallback((coordinates: number[][][][]) => {
     let path = '';
 
-    const processPolygon = (polygonCoords: number[][][]) => {
-      for (const ring of polygonCoords) {
+    for (const polygon of coordinates) {
+      for (const ring of polygon) {
         if (ring.length < 3) continue;
 
         const firstPoint = latLngToPixel(ring[0][1], ring[0][0]);
@@ -159,42 +167,24 @@ const GeofencingSystem: React.FC<GeofencingSystemProps> = ({
 
         path += 'Z ';
       }
-    };
-
-    if (geometry.type === 'Polygon') {
-      processPolygon(geometry.coordinates as number[][][]);
-    } else if (geometry.type === 'MultiPolygon') {
-      const multiPolygon = geometry.coordinates as number[][][][];
-      for (const polygon of multiPolygon) {
-        processPolygon(polygon);
-      }
     }
 
     return path;
   }, [latLngToPixel]);
 
   // Calculate centroid of a state for label placement
-  const getStateCentroid = useCallback((geometry: StateFeature['geometry']) => {
+  const getStateCentroid = useCallback((coordinates: number[][][][]) => {
     let totalLat = 0;
     let totalLng = 0;
     let totalPoints = 0;
 
-    const processPolygon = (polygonCoords: number[][][]) => {
-      for (const ring of polygonCoords) {
+    for (const polygon of coordinates) {
+      for (const ring of polygon) {
         for (const point of ring) {
           totalLng += point[0];
           totalLat += point[1];
           totalPoints++;
         }
-      }
-    };
-
-    if (geometry.type === 'Polygon') {
-      processPolygon(geometry.coordinates as number[][][]);
-    } else if (geometry.type === 'MultiPolygon') {
-      const multiPolygon = geometry.coordinates as number[][][][];
-      for (const polygon of multiPolygon) {
-        processPolygon(polygon);
       }
     }
 
@@ -261,7 +251,7 @@ const GeofencingSystem: React.FC<GeofencingSystemProps> = ({
             {assignedStateFeatures.map(feature => (
               <g key={`assigned-${feature.properties.st_nm}`}>
                 <path
-                  d={geometryToPath(feature.geometry)}
+                  d={multiPolygonToPath(feature.geometry.coordinates)}
                   fill="rgba(34, 197, 94, 0.2)"
                   stroke="#22c55e"
                   strokeWidth="2"
@@ -274,7 +264,7 @@ const GeofencingSystem: React.FC<GeofencingSystemProps> = ({
             {unassignedStateFeatures.map(feature => (
               <g key={`unassigned-${feature.properties.st_nm}`}>
                 <path
-                  d={geometryToPath(feature.geometry)}
+                  d={multiPolygonToPath(feature.geometry.coordinates)}
                   fill="rgba(239, 68, 68, 0.1)"
                   stroke="#ef4444"
                   strokeWidth="1"
@@ -286,7 +276,7 @@ const GeofencingSystem: React.FC<GeofencingSystemProps> = ({
 
             {/* State Labels */}
             {showLabels && assignedStateFeatures.map(feature => {
-              const centroid = getStateCentroid(feature.geometry);
+              const centroid = getStateCentroid(feature.geometry.coordinates);
               if (!centroid) return null;
 
               return (
@@ -341,7 +331,8 @@ export const useGeofencing = (
   useEffect(() => {
     const loadGeoData = async () => {
       try {
-        const data = await loadIndiaStatesData();
+        const response = await fetch('/india.json');
+        const data: IndiaGeoData = await response.json();
         setGeoData(data);
       } catch (error) {
         console.error('Error loading geo data:', error);
@@ -378,28 +369,28 @@ export const useGeofencing = (
     return false;
   }, [isPointInPolygon]);
 
-  const validatePoint = useCallback(async (lat: number, lng: number): Promise<boolean> => {
-    if (!isActive || assignedStates.length === 0) return true;
+  const validatePoint = useCallback((lat: number, lng: number): boolean => {
+    if (!isActive || !geoData || assignedStates.length === 0) return true;
 
-    try {
-      const config = createUserGeofenceConfig('hook-user', assignedStates);
-      const result = await validateGeofence(lat, lng, config);
+    const point: [number, number] = [lng, lat];
 
-      if (!result.isValid) {
-        // Log violation
-        setViolations(prev => [...prev, {
-          point: { lat, lng },
-          timestamp: new Date(),
-          type: result.violationType || 'outside_assigned_region'
-        }]);
+    for (const feature of geoData.features) {
+      if (assignedStates.includes(feature.properties.st_nm)) {
+        if (isPointInMultiPolygon(point, feature.geometry.coordinates)) {
+          return true;
+        }
       }
-
-      return result.isValid;
-    } catch (error) {
-      console.error('Error validating point:', error);
-      return false;
     }
-  }, [isActive, assignedStates]);
+
+    // Log violation
+    setViolations(prev => [...prev, {
+      point: { lat, lng },
+      timestamp: new Date(),
+      type: 'outside_assigned_region'
+    }]);
+
+    return false;
+  }, [isActive, geoData, assignedStates, isPointInMultiPolygon]);
 
   const clearViolations = useCallback(() => {
     setViolations([]);

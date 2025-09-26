@@ -844,7 +844,6 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 const Users: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   // State management
   const [users, setUsers] = useState<User[]>([]);

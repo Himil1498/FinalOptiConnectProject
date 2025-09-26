@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useGoogleMaps } from '../../hooks/useGoogleMaps';
 import { useTheme } from '../../hooks/useTheme';
-import { convertStringToMapTypeId } from '../../utils/unifiedGeofencing';
+import { convertStringToMapTypeId } from '../../utils/mapRestrictions';
 import {
   MapIcon,
   MagnifyingGlassMinusIcon,

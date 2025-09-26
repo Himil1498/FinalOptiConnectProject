@@ -1,8 +1,15 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { validateGeofence } from "../../utils/unifiedGeofencing";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef
+} from "react";
+import { validateIndiaGeofence } from "../../utils/indiaGeofencing";
 import { Z_INDEX } from "../../constants/zIndex";
 import { TOOLBOX_POSITIONING } from "../../constants/layout";
 import StandardDialog, { ConfirmDialog } from "../common/StandardDialog";
+import { useDataStore } from "../../contexts/DataStoreContext";
 
 // Hook to detect sidebar state and calculate positioning
 const useSidebarAwarePositioning = () => {
@@ -146,91 +153,106 @@ const EnhancedStreetViewModal: React.FC<{
     if (!isOpen || !streetViewRef.current || !centerPoint) return;
 
     // Check if Google Maps is loaded
-    if (!window.google || !window.google.maps || !window.google.maps.StreetViewPanorama) {
-      console.error('Google Maps Street View API not loaded');
+    if (
+      !window.google ||
+      !window.google.maps ||
+      !window.google.maps.StreetViewPanorama
+    ) {
+      console.error("Google Maps Street View API not loaded");
       return;
     }
 
     try {
       // Initialize Street View
-      const panorama = new google.maps.StreetViewPanorama(streetViewRef.current, {
-        position: { lat: centerPoint.lat, lng: centerPoint.lng },
-        pov: { heading: 0, pitch: 0 },
-        zoom: 1,
-        motionTracking: false,
-        motionTrackingControl: false,
-        addressControl: true,
-        clickToGo: true,
-        disableDefaultUI: false,
-        showRoadLabels: true
-      });
+      const panorama = new google.maps.StreetViewPanorama(
+        streetViewRef.current,
+        {
+          position: { lat: centerPoint.lat, lng: centerPoint.lng },
+          pov: { heading: 0, pitch: 0 },
+          zoom: 1,
+          motionTracking: false,
+          motionTrackingControl: false,
+          addressControl: true,
+          clickToGo: true,
+          disableDefaultUI: false,
+          showRoadLabels: true
+        }
+      );
 
       panoramaRef.current = panorama;
 
       // Add status listener to check if Street View is available
-      panorama.addListener('status_changed', () => {
+      panorama.addListener("status_changed", () => {
         const status = panorama.getStatus();
         if (status !== google.maps.StreetViewStatus.OK) {
-          console.warn('Street View not available for this location:', centerPoint);
+          console.warn(
+            "Street View not available for this location:",
+            centerPoint
+          );
         }
       });
 
-    // Clear existing overlays
-    markersRef.current.forEach(marker => marker.setMap(null));
-    polylinesRef.current.forEach(polyline => polyline.setMap(null));
-    markersRef.current = [];
-    polylinesRef.current = [];
-
-    // Add measurement point markers to street view
-    points.forEach((point, index) => {
-      const marker = new google.maps.Marker({
-        position: { lat: point.lat, lng: point.lng },
-        map: panorama,
-        title: `Measurement Point ${index + 1}`,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: index === 0 ? '#10B981' : index === points.length - 1 ? '#EF4444' : '#3B82F6',
-          fillOpacity: 1,
-          strokeColor: '#FFFFFF',
-          strokeWeight: 3
-        },
-        label: {
-          text: (index + 1).toString(),
-          color: '#FFFFFF',
-          fontSize: '12px',
-          fontWeight: 'bold'
-        }
-      });
-
-      markersRef.current.push(marker);
-    });
-
-    // Add measurement lines to street view
-    lines.forEach(line => {
-      const polyline = new google.maps.Polyline({
-        path: [
-          { lat: line.start.lat, lng: line.start.lng },
-          { lat: line.end.lat, lng: line.end.lng }
-        ],
-        geodesic: true,
-        strokeColor: '#F59E0B',
-        strokeOpacity: 0.8,
-        strokeWeight: 4,
-        map: panorama as any
-      });
-
-      polylinesRef.current.push(polyline);
-    });
-
-    return () => {
-      markersRef.current.forEach(marker => marker.setMap(null));
-      polylinesRef.current.forEach(polyline => polyline.setMap(null));
+      // Clear existing overlays
+      markersRef.current.forEach((marker) => marker.setMap(null));
+      polylinesRef.current.forEach((polyline) => polyline.setMap(null));
       markersRef.current = [];
       polylinesRef.current = [];
-    };
+
+      // Add measurement point markers to street view
+      points.forEach((point, index) => {
+        const marker = new google.maps.Marker({
+          position: { lat: point.lat, lng: point.lng },
+          map: panorama,
+          title: `Measurement Point ${index + 1}`,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor:
+              index === 0
+                ? "#10B981"
+                : index === points.length - 1
+                ? "#EF4444"
+                : "#3B82F6",
+            fillOpacity: 1,
+            strokeColor: "#FFFFFF",
+            strokeWeight: 3
+          },
+          label: {
+            text: (index + 1).toString(),
+            color: "#FFFFFF",
+            fontSize: "12px",
+            fontWeight: "bold"
+          }
+        });
+
+        markersRef.current.push(marker);
+      });
+
+      // Add measurement lines to street view
+      lines.forEach((line) => {
+        const polyline = new google.maps.Polyline({
+          path: [
+            { lat: line.start.lat, lng: line.start.lng },
+            { lat: line.end.lat, lng: line.end.lng }
+          ],
+          geodesic: true,
+          strokeColor: "#F59E0B",
+          strokeOpacity: 0.8,
+          strokeWeight: 4,
+          map: panorama as any
+        });
+
+        polylinesRef.current.push(polyline);
+      });
+
+      return () => {
+        markersRef.current.forEach((marker) => marker.setMap(null));
+        polylinesRef.current.forEach((polyline) => polyline.setMap(null));
+        markersRef.current = [];
+        polylinesRef.current = [];
+      };
     } catch (error) {
-      console.error('Error initializing Street View:', error);
+      console.error("Error initializing Street View:", error);
     }
   }, [isOpen, centerPoint, points, lines]);
 
@@ -245,19 +267,34 @@ const EnhancedStreetViewModal: React.FC<{
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
         <div className="relative h-full">
           <div ref={streetViewRef} className="w-full h-full" />
           <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 max-w-xs">
-            <h4 className="font-semibold text-sm text-gray-900 mb-2">Measurement Info</h4>
+            <h4 className="font-semibold text-sm text-gray-900 mb-2">
+              Measurement Info
+            </h4>
             <div className="text-xs text-gray-600 space-y-1">
               <div>Points: {points.length}</div>
               <div>Lines: {lines.length}</div>
-              <div>Center: {centerPoint.lat.toFixed(6)}, {centerPoint.lng.toFixed(6)}</div>
+              <div>
+                Center: {centerPoint.lat.toFixed(6)},{" "}
+                {centerPoint.lng.toFixed(6)}
+              </div>
             </div>
           </div>
         </div>
@@ -280,17 +317,29 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
   const [unit, setUnit] = useState<"km" | "miles">("km");
   const [showStreetView, setShowStreetView] = useState(true); // Default enabled
   const [showMeasurementTable, setShowMeasurementTable] = useState(true);
-  const [savedMeasurements, setSavedMeasurements] = useState<SavedMeasurement[]>([]);
-  const [selectedMeasurementId, setSelectedMeasurementId] = useState<string | null>(null);
+  const [savedMeasurements, setSavedMeasurements] = useState<
+    SavedMeasurement[]
+  >([]);
+  const [selectedMeasurementId, setSelectedMeasurementId] = useState<
+    string | null
+  >(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [measurementName, setMeasurementName] = useState("");
   const [measurementNotes, setMeasurementNotes] = useState("");
-  const [editingMeasurementId, setEditingMeasurementId] = useState<string | null>(null);
+  const [editingMeasurementId, setEditingMeasurementId] = useState<
+    string | null
+  >(null);
+
+  // DataStore hook for saving to global data manager
+  const { saveData } = useDataStore();
   const [showSavedTable, setShowSavedTable] = useState(false);
   const [showStreetViewModal, setShowStreetViewModal] = useState(false);
-  const [streetViewCenterPoint, setStreetViewCenterPoint] = useState<Point | null>(null);
+  const [streetViewCenterPoint, setStreetViewCenterPoint] =
+    useState<Point | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deletingMeasurementId, setDeletingMeasurementId] = useState<string | null>(null);
+  const [deletingMeasurementId, setDeletingMeasurementId] = useState<
+    string | null
+  >(null);
   const { sidebarWidth } = useSidebarAwarePositioning();
 
   // Notify parent about data changes
@@ -404,24 +453,23 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
   useEffect(() => {
     if (!map || !isActive) return;
 
-    const handleGoogleMapClick = async (event: google.maps.MapMouseEvent) => {
+    const handleGoogleMapClick = (event: google.maps.MapMouseEvent) => {
       if (!event.latLng) return;
 
       const lat = event.latLng.lat();
       const lng = event.latLng.lng();
 
-      const validation = await validateGeofence(lat, lng);
+      const validation = validateIndiaGeofence(lat, lng);
       if (!validation.isValid) {
         const notificationEvent = new CustomEvent("showNotification", {
           detail: {
-            type: "error",
-            title: "Access Restricted",
-            message: validation.message || "Tools can only be used within India boundaries.",
+            type: "warning",
+            title: "Location Outside India Boundaries",
+            message: validation.message,
             duration: 5000
           }
         });
         window.dispatchEvent(notificationEvent);
-        return; // BLOCK further execution
       }
 
       const { x, y } = latLngToPixel(lat, lng);
@@ -438,7 +486,10 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
     };
 
     const clickListener = map.addListener("click", handleGoogleMapClick);
-    const zoomListener = map.addListener("zoom_changed", updatePixelCoordinates);
+    const zoomListener = map.addListener(
+      "zoom_changed",
+      updatePixelCoordinates
+    );
     const dragListener = map.addListener("dragend", updatePixelCoordinates);
     const resizeListener = map.addListener("resize", updatePixelCoordinates);
 
@@ -452,7 +503,7 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
 
   // Handle map click to add points
   const handleMapClick = useCallback(
-    async (event: React.MouseEvent<HTMLDivElement>) => {
+    (event: React.MouseEvent<HTMLDivElement>) => {
       if (!isActive) return;
 
       const rect = event.currentTarget.getBoundingClientRect();
@@ -460,18 +511,17 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
       const y = event.clientY - rect.top;
       const { lat, lng } = pixelToLatLng(x, y);
 
-      const validation = await validateGeofence(lat, lng);
+      const validation = validateIndiaGeofence(lat, lng);
       if (!validation.isValid) {
-        const notificationEvent = new CustomEvent("showNotification", {
+        const event = new CustomEvent("showNotification", {
           detail: {
-            type: "error",
-            title: "Access Restricted",
-            message: validation.message || "Tools can only be used within India boundaries.",
+            type: "warning",
+            title: "Location Outside India Boundaries",
+            message: validation.message,
             duration: 5000
           }
         });
-        window.dispatchEvent(notificationEvent);
-        return; // BLOCK further execution
+        window.dispatchEvent(event);
       }
 
       const newPoint: Point = {
@@ -523,13 +573,14 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
   }, [points, calculateDistance]);
 
   // Save current measurement
-  const saveMeasurement = useCallback(() => {
+  const saveMeasurement = useCallback(async () => {
     if (points.length < 2) {
       const event = new CustomEvent("showNotification", {
         detail: {
           type: "warning",
           title: "Insufficient Data",
-          message: "Please create a measurement with at least 2 points before saving.",
+          message:
+            "Please create a measurement with at least 2 points before saving.",
           duration: 5000
         }
       });
@@ -557,7 +608,8 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
       totalDistance: cumulativeDistance,
       unit,
       createdAt: editingMeasurementId
-        ? savedMeasurements.find((m) => m.id === editingMeasurementId)?.createdAt || new Date()
+        ? savedMeasurements.find((m) => m.id === editingMeasurementId)
+            ?.createdAt || new Date()
         : new Date(),
       notes: measurementNotes
     };
@@ -570,6 +622,53 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
       setSavedMeasurements((prev) => [...prev, savedMeasurement]);
     }
 
+    // Also save to global DataStore for Data Manager integration
+    try {
+      const segments = [];
+      for (let i = 0; i < points.length - 1; i++) {
+        const startPoint = points[i];
+        const endPoint = points[i + 1];
+        const distance = calculateDistance(startPoint, endPoint);
+        segments.push({
+          startPoint: { lat: startPoint.lat, lng: startPoint.lng },
+          endPoint: { lat: endPoint.lat, lng: endPoint.lng },
+          distance
+        });
+      }
+
+      await saveData({
+        name: measurementName,
+        type: 'distance',
+        description: measurementNotes || `Distance measurement with ${points.length} points`,
+        category: 'Distance Measurements',
+        tags: ['distance', 'measurement', 'manual'],
+        data: {
+          points: points.map((p, index) => ({
+            id: `point_${index}`,
+            lat: p.lat,
+            lng: p.lng,
+            x: p.x,
+            y: p.y
+          })),
+          totalDistance: cumulativeDistance,
+          unit,
+          segments
+        },
+      });
+    } catch (error) {
+      console.error('Failed to save measurement to DataStore:', error);
+      // Show warning but don't prevent local save
+      const errorEvent = new CustomEvent("showNotification", {
+        detail: {
+          type: "warning",
+          title: "Data Manager Save Failed",
+          message: "Measurement saved locally but failed to save to Data Manager.",
+          duration: 4000
+        }
+      });
+      window.dispatchEvent(errorEvent);
+    }
+
     setShowSaveDialog(false);
     setMeasurementName("");
     setMeasurementNotes("");
@@ -578,7 +677,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
     const event = new CustomEvent("showNotification", {
       detail: {
         type: "success",
-        title: editingMeasurementId ? "Measurement Updated" : "Measurement Saved",
+        title: editingMeasurementId
+          ? "Measurement Updated"
+          : "Measurement Saved",
         message: `Distance measurement "${savedMeasurement.name}" has been ${
           editingMeasurementId ? "updated" : "saved"
         } successfully.`,
@@ -586,7 +687,17 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
       }
     });
     window.dispatchEvent(event);
-  }, [points, cumulativeDistance, unit, measurementName, measurementNotes, editingMeasurementId, savedMeasurements]);
+  }, [
+    points,
+    cumulativeDistance,
+    unit,
+    measurementName,
+    measurementNotes,
+    editingMeasurementId,
+    savedMeasurements,
+    calculateDistance,
+    saveData
+  ]);
 
   // Load saved measurement
   const loadMeasurement = useCallback((measurement: SavedMeasurement) => {
@@ -623,10 +734,14 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
   const deleteMeasurement = useCallback(() => {
     if (!deletingMeasurementId) return;
 
-    const measurement = savedMeasurements.find((m) => m.id === deletingMeasurementId);
+    const measurement = savedMeasurements.find(
+      (m) => m.id === deletingMeasurementId
+    );
     if (!measurement) return;
 
-    setSavedMeasurements((prev) => prev.filter((m) => m.id !== deletingMeasurementId));
+    setSavedMeasurements((prev) =>
+      prev.filter((m) => m.id !== deletingMeasurementId)
+    );
 
     if (selectedMeasurementId === deletingMeasurementId) {
       setSelectedMeasurementId(null);
@@ -719,7 +834,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
 
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Unit</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Unit
+                  </label>
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value as "km" | "miles")}
@@ -731,7 +848,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Street View</label>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Street View
+                  </label>
                   <label className="flex items-center space-x-2 bg-green-50 px-2 py-1.5 rounded-lg border border-green-200 hover:bg-green-100 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
@@ -739,7 +858,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                       onChange={(e) => setShowStreetView(e.target.checked)}
                       className="w-3 h-3 text-green-600 focus:ring-green-500 focus:ring-1 rounded"
                     />
-                    <span className="text-xs font-medium text-green-700">📷 Enabled</span>
+                    <span className="text-xs font-medium text-green-700">
+                      📷 Enabled
+                    </span>
                   </label>
                 </div>
               </div>
@@ -833,7 +954,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                   onClick={removeLastPoint}
                   disabled={points.length === 0}
                   className="flex items-center justify-center px-3 py-2 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-md hover:scale-105 disabled:hover:scale-100"
-                  title={`Remove last point${points.length > 0 ? ` (${points.length})` : ''}`}
+                  title={`Remove last point${
+                    points.length > 0 ? ` (${points.length})` : ""
+                  }`}
                 >
                   <span className="mr-1">↩️</span>
                   Undo Last
@@ -842,7 +965,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                   onClick={clearPoints}
                   disabled={points.length === 0}
                   className="flex items-center justify-center px-3 py-2 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-md hover:scale-105 disabled:hover:scale-100"
-                  title={`Clear all points${points.length > 0 ? ` (${points.length})` : ''}`}
+                  title={`Clear all points${
+                    points.length > 0 ? ` (${points.length})` : ""
+                  }`}
                 >
                   <span className="mr-1">🗑️</span>
                   Clear All
@@ -864,11 +989,12 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                     onClick={() => setShowSavedTable(!showSavedTable)}
                     className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
                       showSavedTable
-                        ? 'bg-purple-600 text-white hover:bg-purple-700'
-                        : 'bg-purple-500 text-white hover:bg-purple-600'
+                        ? "bg-purple-600 text-white hover:bg-purple-700"
+                        : "bg-purple-500 text-white hover:bg-purple-600"
                     }`}
                   >
-                    {showSavedTable ? 'Hide Saved' : 'View Saved'} ({savedMeasurements.length})
+                    {showSavedTable ? "Hide Saved" : "View Saved"} (
+                    {savedMeasurements.length})
                   </button>
                 )}
               </div>
@@ -908,7 +1034,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                   <div className="flex items-center justify-between w-full text-xs text-gray-700 font-bold mb-3">
                     <span className="flex items-center">
                       <span className="mr-1">📏</span>
-                      <span>Saved Measurements ({savedMeasurements.length})</span>
+                      <span>
+                        Saved Measurements ({savedMeasurements.length})
+                      </span>
                     </span>
                     <button
                       onClick={() => setShowSavedTable(false)}
@@ -935,11 +1063,17 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                               onClick={() => loadMeasurement(measurement)}
                               className="flex-1 text-left hover:bg-gray-50 p-1 rounded transition-colors"
                             >
-                              <span className="font-semibold text-xs truncate block text-gray-900" title={measurement.name}>
+                              <span
+                                className="font-semibold text-xs truncate block text-gray-900"
+                                title={measurement.name}
+                              >
                                 {measurement.name}
                               </span>
                               <div className="text-xs text-gray-600 mt-1 flex items-center space-x-2">
-                                <span className="font-medium">{measurement.totalDistance.toFixed(2)} {measurement.unit}</span>
+                                <span className="font-medium">
+                                  {measurement.totalDistance.toFixed(2)}{" "}
+                                  {measurement.unit}
+                                </span>
                                 <span>•</span>
                                 <span>{measurement.points.length} points</span>
                               </div>
@@ -953,7 +1087,9 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                                 ✏️
                               </button>
                               <button
-                                onClick={() => showDeleteConfirmation(measurement.id)}
+                                onClick={() =>
+                                  showDeleteConfirmation(measurement.id)
+                                }
                                 className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all"
                                 title="Delete measurement"
                               >
@@ -967,20 +1103,31 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                               <div className="text-xs text-gray-700 space-y-1">
                                 <div className="flex justify-between">
                                   <span className="font-medium">Distance:</span>
-                                  <span className="text-blue-700 font-semibold">{measurement.totalDistance.toFixed(2)} {measurement.unit}</span>
+                                  <span className="text-blue-700 font-semibold">
+                                    {measurement.totalDistance.toFixed(2)}{" "}
+                                    {measurement.unit}
+                                  </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="font-medium">Points:</span>
-                                  <span className="text-gray-900">{measurement.points.length}</span>
+                                  <span className="text-gray-900">
+                                    {measurement.points.length}
+                                  </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="font-medium">Created:</span>
-                                  <span className="text-gray-900">{measurement.createdAt.toLocaleDateString()}</span>
+                                  <span className="text-gray-900">
+                                    {measurement.createdAt.toLocaleDateString()}
+                                  </span>
                                 </div>
                                 {measurement.notes && (
                                   <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
-                                    <span className="font-medium text-yellow-800">Notes:</span>
-                                    <div className="text-yellow-700 italic mt-1">{measurement.notes}</div>
+                                    <span className="font-medium text-yellow-800">
+                                      Notes:
+                                    </span>
+                                    <div className="text-yellow-700 italic mt-1">
+                                      {measurement.notes}
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -1010,21 +1157,31 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
               {/* Point marker */}
               <div
                 className={`absolute w-5 h-5 border-3 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-125 ${
-                  index === 0 ? 'bg-green-500' :
-                  index === points.length - 1 ? 'bg-red-500' :
-                  'bg-blue-500'
+                  index === 0
+                    ? "bg-green-500"
+                    : index === points.length - 1
+                    ? "bg-red-500"
+                    : "bg-blue-500"
                 }`}
                 style={{
                   left: point.x,
                   top: point.y
                 }}
               >
-                <div className={`absolute -top-7 left-1/2 transform -translate-x-1/2 text-xs font-bold px-1.5 py-0.5 rounded shadow-md ${
-                  index === 0 ? 'text-green-700 bg-green-100' :
-                  index === points.length - 1 ? 'text-red-700 bg-red-100' :
-                  'text-blue-700 bg-blue-100'
-                }`}>
-                  {index === 0 ? 'START' : index === points.length - 1 ? 'END' : index + 1}
+                <div
+                  className={`absolute -top-7 left-1/2 transform -translate-x-1/2 text-xs font-bold px-1.5 py-0.5 rounded shadow-md ${
+                    index === 0
+                      ? "text-green-700 bg-green-100"
+                      : index === points.length - 1
+                      ? "text-red-700 bg-red-100"
+                      : "text-blue-700 bg-blue-100"
+                  }`}
+                >
+                  {index === 0
+                    ? "START"
+                    : index === points.length - 1
+                    ? "END"
+                    : index + 1}
                 </div>
 
                 {/* Camera icon overlay */}
@@ -1096,22 +1253,32 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
               {/* Point marker */}
               <div
                 className={`absolute w-5 h-5 border-3 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-125 ${
-                  index === 0 ? 'bg-green-500' :
-                  index === points.length - 1 ? 'bg-red-500' :
-                  'bg-blue-500'
+                  index === 0
+                    ? "bg-green-500"
+                    : index === points.length - 1
+                    ? "bg-red-500"
+                    : "bg-blue-500"
                 }`}
                 style={{
                   left: point.x,
                   top: point.y,
-                  pointerEvents: 'auto'
+                  pointerEvents: "auto"
                 }}
               >
-                <div className={`absolute -top-7 left-1/2 transform -translate-x-1/2 text-xs font-bold px-1.5 py-0.5 rounded shadow-md ${
-                  index === 0 ? 'text-green-700 bg-green-100' :
-                  index === points.length - 1 ? 'text-red-700 bg-red-100' :
-                  'text-blue-700 bg-blue-100'
-                }`}>
-                  {index === 0 ? 'START' : index === points.length - 1 ? 'END' : index + 1}
+                <div
+                  className={`absolute -top-7 left-1/2 transform -translate-x-1/2 text-xs font-bold px-1.5 py-0.5 rounded shadow-md ${
+                    index === 0
+                      ? "text-green-700 bg-green-100"
+                      : index === points.length - 1
+                      ? "text-red-700 bg-red-100"
+                      : "text-blue-700 bg-blue-100"
+                  }`}
+                >
+                  {index === 0
+                    ? "START"
+                    : index === points.length - 1
+                    ? "END"
+                    : index + 1}
                 </div>
 
                 {/* Camera icon overlay */}
@@ -1124,7 +1291,7 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
                     }}
                     className="absolute -top-2 -right-2 w-5 h-5 bg-white border-2 border-blue-500 rounded-full flex items-center justify-center text-blue-500 hover:bg-blue-50 transition-all shadow-md hover:scale-110 animate-pulse"
                     title="Open Street View"
-                    style={{ pointerEvents: 'auto' }}
+                    style={{ pointerEvents: "auto" }}
                   >
                     📷
                   </button>
@@ -1178,7 +1345,7 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
           className="absolute inset-0 cursor-crosshair"
           style={{
             zIndex: Z_INDEX.MAP_OVERLAY,
-            pointerEvents: (isPrimaryTool || !multiToolMode) ? 'auto' : 'none'
+            pointerEvents: isPrimaryTool || !multiToolMode ? "auto" : "none"
           }}
           onClick={(event: React.MouseEvent<HTMLDivElement>) => {
             if (!isActive) return;
@@ -1196,7 +1363,7 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
               y
             };
 
-            setPoints(prev => [...prev, newPoint]);
+            setPoints((prev) => [...prev, newPoint]);
           }}
         />
       )}
@@ -1243,19 +1410,27 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
             </div>
 
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <h4 className="text-sm font-semibold text-blue-900 mb-3">Measurement Summary</h4>
+              <h4 className="text-sm font-semibold text-blue-900 mb-3">
+                Measurement Summary
+              </h4>
               <div className="text-sm text-blue-800 space-y-2">
                 <div className="flex justify-between">
                   <span className="font-medium">Points:</span>
-                  <span className="text-blue-900 font-semibold">{points.length}</span>
+                  <span className="text-blue-900 font-semibold">
+                    {points.length}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Distance:</span>
-                  <span className="text-blue-900 font-semibold">{cumulativeDistance.toFixed(2)} {unit}</span>
+                  <span className="text-blue-900 font-semibold">
+                    {cumulativeDistance.toFixed(2)} {unit}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Unit:</span>
-                  <span className="text-blue-900 font-semibold">{unit === "km" ? "Kilometers" : "Miles"}</span>
+                  <span className="text-blue-900 font-semibold">
+                    {unit === "km" ? "Kilometers" : "Miles"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1305,7 +1480,12 @@ const DistanceMeasurementTool: React.FC<DistanceMeasurementToolProps> = ({
         }}
         onConfirm={deleteMeasurement}
         title="Delete Measurement"
-        message={`Are you sure you want to delete the measurement "${deletingMeasurementId ? savedMeasurements.find(m => m.id === deletingMeasurementId)?.name || 'Unknown' : 'Unknown'}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete the measurement "${
+          deletingMeasurementId
+            ? savedMeasurements.find((m) => m.id === deletingMeasurementId)
+                ?.name || "Unknown"
+            : "Unknown"
+        }"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         confirmVariant="danger"

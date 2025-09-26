@@ -6,14 +6,15 @@ import React, {
   useEffect
 } from "react";
 import {
-  validateGeofence,
-  validateMultipleCoordinates,
-  preloadGeofenceData
-} from "../../utils/unifiedGeofencing";
+  validateIndiaGeofencePrecise,
+  validateMultipleCoordinatesPrecise,
+  preloadIndiaBoundaryData
+} from "../../utils/preciseIndiaGeofencing";
 import { ConfirmDialog } from "../common/StandardDialog";
 import { Z_INDEX } from "../../constants/zIndex";
 import { LAYOUT_DIMENSIONS, TOOLBOX_POSITIONING } from "../../constants/layout";
 import { useStackedToolboxPositioning } from '../../hooks/useStackedToolboxPositioning';
+import { useDataStore } from "../../contexts/DataStoreContext";
 
 // Sidebar-aware positioning hook for consistent UI layout
 const useSidebarAwarePositioning = () => {
@@ -186,6 +187,9 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
   const [isDraggingVertex, setIsDraggingVertex] = useState(false);
   const { sidebarWidth } = useSidebarAwarePositioning();
   const { top: stackedTop, updateHeight } = useStackedToolboxPositioning('polygon-tool', isActive);
+
+  // DataStore hook for saving to global data manager
+  const { saveData } = useDataStore();
   const toolboxRef = useRef<HTMLDivElement>(null);
 
   // Notify parent when data changes
@@ -341,14 +345,15 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
       const y = event.clientY - rect.top;
       const { lat, lng } = pixelToLatLng(x, y);
 
-      // Validate coordinates are within India - STRICT ENFORCEMENT
-      const validation = await validateGeofence(lat, lng);
+      // Validate coordinates are within India
+      const validation = await validateIndiaGeofencePrecise(lat, lng);
       if (!validation.isValid) {
+        // Show warning but continue polygon creation
         const event = new CustomEvent("showNotification", {
           detail: {
-            type: "error",
-            title: "Access Restricted",
-            message: validation.message || "Polygon drawing can only be used within India boundaries.",
+            type: "warning",
+            title: "Location Outside India Boundaries",
+            message: validation.message,
             duration: 6000
           }
         });
@@ -367,7 +372,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
             window.dispatchEvent(suggestionEvent);
           }, 1000);
         }
-        return; // BLOCK polygon creation outside India
+        // Continue with vertex creation (don't return early)
       }
 
       const newVertex: Vertex = {
@@ -422,7 +427,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
 
       try {
         // Strict validation for India boundaries
-        const validation = await validateGeofence(lat, lng, {
+        const validation = await validateIndiaGeofencePrecise(lat, lng, {
           strictMode: true,
           showWarnings: true,
           allowNearBorder: false,
@@ -430,10 +435,11 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
         });
 
         if (!validation.isValid) {
+          // Show warning but continue tool usage
           const notificationEvent = new CustomEvent("showNotification", {
             detail: {
-              type: "error",
-              title: "Access Restricted",
+              type: "warning",
+              title: "Location Outside India Boundaries",
               message: `${validation.message} ${
                 validation.suggestedAction || ""
               }`,
@@ -441,7 +447,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
             }
           });
           window.dispatchEvent(notificationEvent);
-          return; // BLOCK tool usage outside India
+          // Continue with vertex creation (don't return early)
         }
       } catch (error) {
         console.error("Error validating geographic boundaries:", error);
@@ -488,7 +494,7 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
       lat: vertex.lat,
       lng: vertex.lng
     }));
-    const validation = await validateMultipleCoordinates(coordinates);
+    const validation = await validateMultipleCoordinatesPrecise(coordinates);
 
     if (!validation.isValid) {
       const event = new CustomEvent("showNotification", {
@@ -518,6 +524,46 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
     };
 
     setSavedPolygons((prev) => [...prev, polygon]);
+
+    // Also save to global DataStore for Data Manager integration
+    try {
+      await saveData({
+        name: polygon.name,
+        type: 'polygon',
+        description: `Polygon with ${polygon.vertices.length} vertices`,
+        category: 'Polygon Measurements',
+        tags: ['polygon', 'area', 'manual'],
+        data: {
+          points: polygon.vertices.map((vertex, index) => ({
+            id: `vertex_${index}`,
+            lat: vertex.lat,
+            lng: vertex.lng,
+            x: vertex.x,
+            y: vertex.y
+          })),
+          area: polygon.area,
+          perimeter: polygon.perimeter,
+          unit: 'metric', // Assuming metric units
+          center: {
+            lat: polygon.vertices.reduce((sum, v) => sum + v.lat, 0) / polygon.vertices.length,
+            lng: polygon.vertices.reduce((sum, v) => sum + v.lng, 0) / polygon.vertices.length
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Failed to save polygon to DataStore:', error);
+      // Show warning but don't prevent local save
+      const errorEvent = new CustomEvent("showNotification", {
+        detail: {
+          type: "warning",
+          title: "Data Manager Save Failed",
+          message: "Polygon saved locally but failed to save to Data Manager.",
+          duration: 4000
+        }
+      });
+      window.dispatchEvent(errorEvent);
+    }
+
     setCurrentPolygon([]);
     setNewPolygonName("");
   }, [
@@ -525,7 +571,8 @@ const PolygonDrawingTool: React.FC<PolygonDrawingToolProps> = ({
     newPolygonName,
     savedPolygons.length,
     selectedColor.value,
-    currentPolygonStats
+    currentPolygonStats,
+    saveData
   ]);
 
   // Clear current polygon

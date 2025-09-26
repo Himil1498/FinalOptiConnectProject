@@ -1,14 +1,20 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider } from 'react-redux';
-import { store } from './store';
-import LoginForm from './components/auth/LoginForm';
-import Dashboard from './pages/Dashboard';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { AdminPage } from './pages/AdminPage';
-import Users from './pages/Users';
-import BaseMapPage from './pages/BaseMapPage';
-import { useAuth } from './hooks/useAuth';
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate
+} from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "./store";
+import LoginForm from "./components/auth/LoginForm";
+import Dashboard from "./pages/Dashboard";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { AdminPage } from "./pages/AdminPage";
+import BaseMapPage from "./pages/BaseMapPage";
+import DataManagerPage from "./pages/DataManagerPage";
+import { useAuth } from "./hooks/useAuth";
+import Users from "./pages/Users";
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -48,15 +54,29 @@ const AppContent: React.FC = () => {
         }
       />
       <Route
-        path="/users"
-        element={
-          isAuthenticated ? <Users /> : <Navigate to="/login" replace />
-        }
-      />
-      <Route
         path="/basemap"
         element={
           isAuthenticated ? <BaseMapPage /> : <Navigate to="/login" replace />
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          isAuthenticated ? (
+            <Users />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/data-manager"
+        element={
+          isAuthenticated ? (
+            <DataManagerPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
         }
       />
       <Route
