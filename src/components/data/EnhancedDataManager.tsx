@@ -5,6 +5,8 @@ import StandardDialog, { ConfirmDialog } from '../common/StandardDialog';
 import EnhancedExportManager from './EnhancedExportManager';
 import ImprovedExportManager from './ImprovedExportManager';
 import TempDataViewer from './TempDataViewer';
+import DataMapVisualization from './DataMapVisualization';
+import DataImportManager from './DataImportManager';
 
 interface EnhancedDataManagerProps {
   isOpen: boolean;
@@ -50,6 +52,8 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
   const [showImprovedExport, setShowImprovedExport] = useState(false);
   const [showTempDataViewer, setShowTempDataViewer] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showMapView, setShowMapView] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [currentItem, setCurrentItem] = useState<SavedDataItem | null>(null);
 
   // Edit form state
@@ -133,6 +137,24 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
   const handleDelete = useCallback((item: SavedDataItem) => {
     setCurrentItem(item);
     setShowDeleteConfirm(true);
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedItems.size === 0) return;
+
+    try {
+      for (const itemId of Array.from(selectedItems)) {
+        await deleteData(itemId);
+      }
+      setSelectedItems(new Set());
+      setShowBulkActions(false);
+    } catch (error) {
+      console.error('Failed to delete items:', error);
+    }
+  }, [selectedItems, deleteData]);
+
+  const handleMapView = useCallback(() => {
+    setShowMapView(true);
   }, []);
 
   const confirmDelete = useCallback(async () => {
@@ -220,11 +242,29 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
       kml: '🗺️'
     };
 
+    // Source-based styling and badges
+    const getSourceInfo = (item: SavedDataItem) => {
+      // Determine source from tags or metadata
+      const isImported = item.tags.includes('imported') || item.tags.includes('csv');
+      const isKML = item.type === 'kml' || item.tags.includes('kml');
+      const isManual = !isImported && !isKML;
+
+      if (isKML) {
+        return { label: 'KML', color: 'bg-red-100 text-red-700 border-red-200', emoji: '🗺️' };
+      } else if (isImported) {
+        return { label: 'Imported', color: 'bg-blue-100 text-blue-700 border-blue-200', emoji: '📥' };
+      } else {
+        return { label: 'Manual', color: 'bg-green-100 text-green-700 border-green-200', emoji: '✏️' };
+      }
+    };
+
+    const sourceInfo = getSourceInfo(item);
+
     return (
       <div
         key={item.id}
         className={`bg-white rounded-lg border-2 transition-all hover:shadow-lg ${
-          isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-200'
+          isSelected ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-blue-100' : 'border-gray-200'
         }`}
       >
         <div className="p-4">
@@ -237,36 +277,41 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
                 className="w-4 h-4 text-blue-600 rounded"
               />
               <span className="text-2xl">{typeEmoji[item.type]}</span>
-              <div>
-                <h3 className="font-semibold text-gray-900 text-sm">{item.name}</h3>
+              <div className="flex-1">
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-semibold text-gray-900 text-sm">{item.name}</h3>
+                  <span className={`px-2 py-1 text-xs font-medium rounded border ${sourceInfo.color}`}>
+                    {sourceInfo.emoji} {sourceInfo.label}
+                  </span>
+                </div>
                 <p className="text-xs text-gray-500">{item.type} • {item.category}</p>
               </div>
             </div>
             <div className="flex space-x-1">
               <button
                 onClick={() => handleView(item)}
-                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 title="View details"
               >
                 👁️
               </button>
               <button
                 onClick={() => handleEdit(item)}
-                className="p-1 text-green-600 hover:bg-green-50 rounded"
+                className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
                 title="Edit"
               >
                 ✏️
               </button>
               <button
                 onClick={() => handleLoad(item)}
-                className="p-1 text-purple-600 hover:bg-purple-50 rounded"
+                className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
                 title="Load data"
               >
                 📂
               </button>
               <button
                 onClick={() => handleDelete(item)}
-                className="p-1 text-red-600 hover:bg-red-50 rounded"
+                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
                 title="Delete"
               >
                 🗑️
@@ -412,12 +457,19 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl w-[95%] h-[95%] max-w-7xl overflow-hidden flex flex-col">
+      <div className="bg-white rounded-lg shadow-2xl w-full h-full max-w-none overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
           <div className="flex items-center space-x-3">
-            <h2 className="text-2xl font-bold text-gray-900">💾 Data Manager</h2>
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors mr-2"
+              title="Back to Dashboard"
+            >
+              ← Back
+            </button>
+            <h2 className="text-2xl font-bold">💾 Data Manager</h2>
+            <div className="flex items-center space-x-4 text-sm opacity-90">
               <span>Total: {stats.totalItems}</span>
               <span>Size: {(stats.totalSize / 1024).toFixed(1)} KB</span>
             </div>
@@ -425,31 +477,45 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowImportDialog(true)}
-              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm transition-colors"
             >
               📥 Import
             </button>
             <button
+              onClick={handleMapView}
+              className="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 text-sm transition-colors"
+            >
+              🗺️ Map View
+            </button>
+            <button
               onClick={() => setShowEnhancedExport(true)}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm transition-colors"
             >
               📤 Basic Export
             </button>
             <button
               onClick={() => setShowImprovedExport(true)}
-              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+              className="px-3 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 text-sm transition-colors"
             >
               🚀 Advanced Export
             </button>
             <button
               onClick={() => setShowTempDataViewer(true)}
-              className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
+              className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm transition-colors"
             >
               🗂️ Temp Data
             </button>
+            {selectedItems.size > 0 && (
+              <button
+                onClick={() => setShowBulkActions(true)}
+                className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm transition-colors"
+              >
+                ⚡ Actions ({selectedItems.size})
+              </button>
+            )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors text-white"
             >
               ✕
             </button>
@@ -580,35 +646,62 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
           size="lg"
         >
           {currentItem && (
-            <div className="p-6 space-y-6">
-              <div className="border-b pb-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{currentItem.name}</h3>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span>Type: {currentItem.type}</span>
-                  <span>Category: {currentItem.category}</span>
-                  <span>Created: {currentItem.createdAt.toLocaleDateString()}</span>
-                  <span>Updated: {currentItem.updatedAt.toLocaleDateString()}</span>
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50">
+              <div className="p-6 space-y-6">
+                <div className="border-b pb-4 bg-white rounded-t-lg p-4 shadow-sm">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-3xl">
+                      {currentItem.type === 'distance' ? '📏' :
+                       currentItem.type === 'elevation' ? '⛰️' :
+                       currentItem.type === 'polygon' ? '🔺' :
+                       currentItem.type === 'kml' ? '🗺️' : '🏗️'}
+                    </span>
+                    <h3 className="text-xl font-bold text-gray-900">{currentItem.name}</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="bg-blue-100 rounded-lg p-3">
+                      <div className="font-medium text-blue-800">Type</div>
+                      <div className="text-blue-600">{currentItem.type}</div>
+                    </div>
+                    <div className="bg-green-100 rounded-lg p-3">
+                      <div className="font-medium text-green-800">Category</div>
+                      <div className="text-green-600">{currentItem.category}</div>
+                    </div>
+                    <div className="bg-purple-100 rounded-lg p-3">
+                      <div className="font-medium text-purple-800">Created</div>
+                      <div className="text-purple-600">{currentItem.createdAt.toLocaleDateString()}</div>
+                    </div>
+                    <div className="bg-orange-100 rounded-lg p-3">
+                      <div className="font-medium text-orange-800">Updated</div>
+                      <div className="text-orange-600">{currentItem.updatedAt.toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                  {currentItem.description && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="font-medium text-gray-800 mb-1">Description</div>
+                      <p className="text-gray-700">{currentItem.description}</p>
+                    </div>
+                  )}
                 </div>
-                {currentItem.description && (
-                  <p className="mt-2 text-gray-700">{currentItem.description}</p>
-                )}
-              </div>
 
-              {renderDataDetails(currentItem)}
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  {renderDataDetails(currentItem)}
+                </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t">
-                <button
-                  onClick={() => setShowViewDialog(false)}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => handleLoad(currentItem)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Load Data
-                </button>
+                <div className="flex justify-end space-x-3 pt-4 bg-white rounded-b-lg p-4 shadow-sm">
+                  <button
+                    onClick={() => setShowViewDialog(false)}
+                    className="px-6 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => handleLoad(currentItem)}
+                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md"
+                  >
+                    Load Data
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -621,63 +714,65 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
           title={`Edit: ${currentItem?.name}`}
           size="md"
         >
-          <div className="p-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-              <input
-                type="text"
-                value={editForm.name}
-                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div className="bg-gradient-to-br from-green-50 to-blue-50">
+            <div className="p-6 space-y-4">
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <label className="block text-sm font-medium text-green-700 mb-2">📝 Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-              <textarea
-                value={editForm.description}
-                onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <label className="block text-sm font-medium text-blue-700 mb-2">📄 Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <input
-                type="text"
-                value={editForm.category}
-                onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <label className="block text-sm font-medium text-purple-700 mb-2">📁 Category</label>
+                <input
+                  type="text"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-2 border-2 border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tags (comma-separated)</label>
-              <input
-                type="text"
-                value={editForm.tags.join(', ')}
-                onChange={(e) => setEditForm(prev => ({
-                  ...prev,
-                  tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
-                }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <label className="block text-sm font-medium text-orange-700 mb-2">🏷️ Tags (comma-separated)</label>
+                <input
+                  type="text"
+                  value={editForm.tags.join(', ')}
+                  onChange={(e) => setEditForm(prev => ({
+                    ...prev,
+                    tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
+                  }))}
+                  className="w-full px-3 py-2 border-2 border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                />
+              </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <button
-                onClick={() => setShowEditDialog(false)}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Save Changes
-              </button>
+              <div className="flex justify-end space-x-3 pt-4 bg-white rounded-lg p-4 shadow-sm">
+                <button
+                  onClick={() => setShowEditDialog(false)}
+                  className="px-6 py-2 text-gray-600 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all shadow-md"
+                >
+                  Save Changes
+                </button>
+              </div>
             </div>
           </div>
         </StandardDialog>
@@ -758,6 +853,89 @@ const EnhancedDataManager: React.FC<EnhancedDataManagerProps> = ({
           onClose={() => setShowTempDataViewer(false)}
           onShowOnMap={handleShowOnMap}
         />
+
+        {/* Data Map Visualization */}
+        {showMapView && (
+          <DataMapVisualization
+            data={filteredData}
+            onDataClick={handleView}
+            onClose={() => setShowMapView(false)}
+          />
+        )}
+
+        {/* Import Manager */}
+        <DataImportManager
+          isOpen={showImportDialog}
+          onClose={() => setShowImportDialog(false)}
+          onImportComplete={(count) => {
+            console.log(`Imported ${count} items`);
+          }}
+        />
+
+        {/* Bulk Actions Dialog */}
+        <StandardDialog
+          isOpen={showBulkActions}
+          onClose={() => setShowBulkActions(false)}
+          title={`Bulk Actions (${selectedItems.size} items)`}
+          size="md"
+        >
+          <div className="p-6 space-y-4">
+            <div className="text-gray-600 mb-4">
+              You have selected {selectedItems.size} items. What would you like to do?
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowBulkActions(false);
+                  setShowImprovedExport(true);
+                }}
+                className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-3"
+              >
+                <span className="text-2xl">📤</span>
+                <div>
+                  <div className="font-medium">Export Selected Items</div>
+                  <div className="text-sm text-gray-600">Export as JSON, CSV, or KML</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  const selectedData = filteredData.filter(item => selectedItems.has(item.id));
+                  setShowMapView(true);
+                  setShowBulkActions(false);
+                }}
+                className="w-full p-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-3"
+              >
+                <span className="text-2xl">🗺️</span>
+                <div>
+                  <div className="font-medium">View on Map</div>
+                  <div className="text-sm text-gray-600">Visualize selected items on map</div>
+                </div>
+              </button>
+
+              <button
+                onClick={handleBulkDelete}
+                className="w-full p-3 text-left border border-red-300 rounded-lg hover:bg-red-50 flex items-center space-x-3 text-red-600"
+              >
+                <span className="text-2xl">🗑️</span>
+                <div>
+                  <div className="font-medium">Delete Selected Items</div>
+                  <div className="text-sm text-red-500">This action cannot be undone</div>
+                </div>
+              </button>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <button
+                onClick={() => setShowBulkActions(false)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </StandardDialog>
       </div>
     </div>
   );
