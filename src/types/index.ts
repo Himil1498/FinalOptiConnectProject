@@ -280,7 +280,9 @@ export interface AuditLog {
 export interface User {
   id: string;
   email: string;
+  username: string; // New username field for login
   name: string;
+  password?: string; // Optional for security - not always included in responses
   role: "admin" | "manager" | "technician" | "viewer";
   permissions: string[];
   assignedStates?: string[];

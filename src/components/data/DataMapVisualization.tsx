@@ -80,68 +80,92 @@ const DataMapVisualization: React.FC<DataMapVisualizationProps> = ({
   const extractPositionData = useCallback((item: SavedDataItem): MarkerData[] => {
     const markers: MarkerData[] = [];
 
-    switch (item.type) {
-      case 'distance': {
-        const distData = item as DistanceMeasurement;
-        if (distData.data.points && distData.data.points.length > 0) {
-          distData.data.points.forEach((point, index) => {
-            markers.push({
-              id: `${item.id}-${index}`,
-              position: { lat: point.lat, lng: point.lng },
-              type: item.type,
-              item,
-              color: typeColors.distance
+    try {
+      switch (item.type) {
+        case 'distance': {
+          const distData = item as DistanceMeasurement;
+          if (distData.data?.points && Array.isArray(distData.data.points) && distData.data.points.length > 0) {
+            distData.data.points.forEach((point, index) => {
+              if (point && typeof point.lat === 'number' && typeof point.lng === 'number') {
+                markers.push({
+                  id: `${item.id}-${index}`,
+                  position: { lat: point.lat, lng: point.lng },
+                  type: item.type,
+                  item,
+                  color: typeColors.distance
+                });
+              }
             });
-          });
+          }
+          break;
         }
-        break;
-      }
-      case 'elevation': {
-        const elevData = item as ElevationAnalysis;
-        if (elevData.data.points && elevData.data.points.length > 0) {
-          elevData.data.points.forEach((point, index) => {
-            markers.push({
-              id: `${item.id}-${index}`,
-              position: { lat: point.lat, lng: point.lng },
-              type: item.type,
-              item,
-              color: typeColors.elevation
+        case 'elevation': {
+          const elevData = item as ElevationAnalysis;
+          if (elevData.data?.points && Array.isArray(elevData.data.points) && elevData.data.points.length > 0) {
+            elevData.data.points.forEach((point, index) => {
+              if (point && typeof point.lat === 'number' && typeof point.lng === 'number') {
+                markers.push({
+                  id: `${item.id}-${index}`,
+                  position: { lat: point.lat, lng: point.lng },
+                  type: item.type,
+                  item,
+                  color: typeColors.elevation
+                });
+              }
             });
-          });
+          }
+          break;
         }
-        break;
-      }
-      case 'polygon': {
-        const polyData = item as PolygonMeasurement;
-        if (polyData.data.points && polyData.data.points.length > 0) {
-          polyData.data.points.forEach((point, index) => {
+        case 'polygon': {
+          const polyData = item as PolygonMeasurement;
+          if (polyData.data?.points && Array.isArray(polyData.data.points) && polyData.data.points.length > 0) {
+            polyData.data.points.forEach((point, index) => {
+              if (point && typeof point.lat === 'number' && typeof point.lng === 'number') {
+                markers.push({
+                  id: `${item.id}-${index}`,
+                  position: { lat: point.lat, lng: point.lng },
+                  type: item.type,
+                  item,
+                  color: typeColors.polygon
+                });
+              }
+            });
+          }
+          // Add center point as well
+          if (polyData.data?.center && typeof polyData.data.center.lat === 'number' && typeof polyData.data.center.lng === 'number') {
             markers.push({
-              id: `${item.id}-${index}`,
-              position: { lat: point.lat, lng: point.lng },
+              id: `${item.id}-center`,
+              position: { lat: polyData.data.center.lat, lng: polyData.data.center.lng },
               type: item.type,
               item,
               color: typeColors.polygon
             });
-          });
+          }
+          break;
         }
-        break;
-      }
-      case 'infrastructure':
-      case 'kml': {
-        const infraData = item as InfrastructureData;
-        if (infraData.data.locations && infraData.data.locations.length > 0) {
-          infraData.data.locations.forEach((location, index) => {
-            markers.push({
-              id: `${item.id}-${index}`,
-              position: { lat: location.lat, lng: location.lng },
-              type: item.type,
-              item,
-              color: item.type === 'kml' ? typeColors.kml : typeColors.infrastructure
+        case 'infrastructure':
+        case 'kml': {
+          const infraData = item as InfrastructureData;
+          if (infraData.data?.locations && Array.isArray(infraData.data.locations) && infraData.data.locations.length > 0) {
+            infraData.data.locations.forEach((location, index) => {
+              if (location && typeof location.lat === 'number' && typeof location.lng === 'number') {
+                markers.push({
+                  id: `${item.id}-${index}`,
+                  position: { lat: location.lat, lng: location.lng },
+                  type: item.type,
+                  item,
+                  color: item.type === 'kml' ? typeColors.kml : typeColors.infrastructure
+                });
+              }
             });
-          });
+          }
+          break;
         }
-        break;
+        default:
+          console.warn('Unknown data type:', (item as any).type);
       }
+    } catch (error) {
+      console.error('Error extracting position data for item:', item.id, error);
     }
 
     return markers;
@@ -193,39 +217,71 @@ const DataMapVisualization: React.FC<DataMapVisualizationProps> = ({
 
     // Draw connections for line-based data
     filteredData.forEach(item => {
-      if (item.type === 'distance' || item.type === 'elevation') {
-        const itemData = item as DistanceMeasurement | ElevationAnalysis;
-        if (itemData.data.points && itemData.data.points.length > 1) {
-          const path = itemData.data.points.map(point => ({ lat: point.lat, lng: point.lng }));
+      try {
+        if (item.type === 'distance') {
+          const distData = item as DistanceMeasurement;
+          if (distData.data?.points && Array.isArray(distData.data.points) && distData.data.points.length > 1) {
+            const path = distData.data.points
+              .filter(point => point && typeof point.lat === 'number' && typeof point.lng === 'number')
+              .map(point => ({ lat: point.lat, lng: point.lng }));
 
-          const polyline = new google.maps.Polyline({
-            path,
-            geodesic: true,
-            strokeColor: typeColors[item.type],
-            strokeOpacity: 0.6,
-            strokeWeight: 3,
-            map: mapInstanceRef.current,
-          });
+            if (path.length > 1) {
+              const polyline = new google.maps.Polyline({
+                path,
+                geodesic: true,
+                strokeColor: typeColors.distance,
+                strokeOpacity: 0.6,
+                strokeWeight: 3,
+                map: mapInstanceRef.current,
+              });
 
-          overlaysRef.current.push(polyline);
+              overlaysRef.current.push(polyline);
+            }
+          }
+        } else if (item.type === 'elevation') {
+          const elevData = item as ElevationAnalysis;
+          if (elevData.data?.points && Array.isArray(elevData.data.points) && elevData.data.points.length > 1) {
+            const path = elevData.data.points
+              .filter(point => point && typeof point.lat === 'number' && typeof point.lng === 'number')
+              .map(point => ({ lat: point.lat, lng: point.lng }));
+
+            if (path.length > 1) {
+              const polyline = new google.maps.Polyline({
+                path,
+                geodesic: true,
+                strokeColor: typeColors.elevation,
+                strokeOpacity: 0.6,
+                strokeWeight: 3,
+                map: mapInstanceRef.current,
+              });
+
+              overlaysRef.current.push(polyline);
+            }
+          }
+        } else if (item.type === 'polygon') {
+          const polyData = item as PolygonMeasurement;
+          if (polyData.data?.points && Array.isArray(polyData.data.points) && polyData.data.points.length > 2) {
+            const path = polyData.data.points
+              .filter(point => point && typeof point.lat === 'number' && typeof point.lng === 'number')
+              .map(point => ({ lat: point.lat, lng: point.lng }));
+
+            if (path.length > 2) {
+              const polygon = new google.maps.Polygon({
+                paths: path,
+                strokeColor: typeColors.polygon,
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: typeColors.polygon,
+                fillOpacity: 0.2,
+                map: mapInstanceRef.current,
+              });
+
+              overlaysRef.current.push(polygon);
+            }
+          }
         }
-      } else if (item.type === 'polygon') {
-        const polyData = item as PolygonMeasurement;
-        if (polyData.data.points && polyData.data.points.length > 2) {
-          const path = polyData.data.points.map(point => ({ lat: point.lat, lng: point.lng }));
-
-          const polygon = new google.maps.Polygon({
-            paths: path,
-            strokeColor: typeColors.polygon,
-            strokeOpacity: 0.8,
-            strokeWeight: 2,
-            fillColor: typeColors.polygon,
-            fillOpacity: 0.2,
-            map: mapInstanceRef.current,
-          });
-
-          overlaysRef.current.push(polygon);
-        }
+      } catch (error) {
+        console.error('Error rendering overlay for item:', item.id, error);
       }
     });
 

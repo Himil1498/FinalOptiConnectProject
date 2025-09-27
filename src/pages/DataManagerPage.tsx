@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import NavigationBar from "../components/common/NavigationBar";
 import EnhancedDataManager from "../components/data/EnhancedDataManager";
-import { useDataStore } from "../contexts/DataStoreContext";
 
 const DataManagerPage: React.FC = () => {
   const navigate = useNavigate();
-  const { getDataStats } = useDataStore();
-  const [showDataManager, setShowDataManager] = useState(true);
-
-  const stats = getDataStats();
+  const { user } = useAuth();
+  const [showDataManager] = useState(true);
 
   const handleShowOnMap = (data: any[]) => {
     // Navigate to dashboard/basemap with the data to display
@@ -17,14 +16,21 @@ const DataManagerPage: React.FC = () => {
     navigate("/dashboard", { state: { showMapData: true } });
   };
 
+  const handleClose = () => {
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Data Manager Dialog */}
-      <EnhancedDataManager
-        isOpen={showDataManager}
-        onClose={() => setShowDataManager(false)}
-        onShowOnMap={handleShowOnMap}
-      />
+      <NavigationBar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Enhanced Data Manager */}
+        <EnhancedDataManager
+          isOpen={showDataManager}
+          onClose={handleClose}
+          onShowOnMap={handleShowOnMap}
+        />
+      </div>
     </div>
   );
 };

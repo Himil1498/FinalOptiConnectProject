@@ -125,6 +125,7 @@ export const AdminUserCreationForm: React.FC<AdminUserCreationFormProps> = ({
   const [formData, setFormData] = useState<CreateUserData>({
     name: "",
     email: "",
+    username: "",
     password: "",
     confirmPassword: "",
     phoneNumber: "",
@@ -183,6 +184,7 @@ export const AdminUserCreationForm: React.FC<AdminUserCreationFormProps> = ({
       setFormData({
         name: "",
         email: "",
+        username: "",
         password: "",
         confirmPassword: "",
         phoneNumber: "",
@@ -389,6 +391,14 @@ export const AdminUserCreationForm: React.FC<AdminUserCreationFormProps> = ({
       errors.email = "Invalid email format";
     }
 
+    if (!formData.username.trim()) {
+      errors.username = "Username is required";
+    } else if (formData.username.length < 3) {
+      errors.username = "Username must be at least 3 characters";
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      errors.username = "Username can only contain letters, numbers, and underscores";
+    }
+
     if (!formData.password) {
       errors.password = "Password is required";
     } else if (formData.password.length < 8) {
@@ -588,6 +598,34 @@ export const AdminUserCreationForm: React.FC<AdminUserCreationFormProps> = ({
                       {formErrors.email}
                     </p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    👤 Username *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        username: e.target.value
+                      }))
+                    }
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      formErrors.username ? "border-red-300" : "border-gray-300"
+                    }`}
+                    placeholder="Enter username (letters, numbers, underscore only)"
+                  />
+                  {formErrors.username && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {formErrors.username}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Username will be used for login along with email
+                  </p>
                 </div>
 
                 <div>

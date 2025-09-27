@@ -96,6 +96,11 @@ const ComprehensiveGoogleMapInterface: React.FC<
   const [showKMLLayers, setShowKMLLayers] = useState(false);
   const [kmlInfrastructureData, setKmlInfrastructureData] = useState<any[]>([]);
 
+  // Infrastructure data visibility states
+  const [showPOPData, setShowPOPData] = useState(false);
+  const [showSubPOPData, setShowSubPOPData] = useState(false);
+  const [showManualData, setShowManualData] = useState(false);
+
   // Auto-load KML data
   const {
     getAllData: getKMLData,
@@ -369,6 +374,59 @@ const ComprehensiveGoogleMapInterface: React.FC<
         message: `Navigating to coordinates: ${coords.lat.toFixed(
           4
         )}, ${coords.lng.toFixed(4)}`,
+        duration: 2000
+      });
+    },
+    [addNotification]
+  );
+
+  // Infrastructure data visibility handlers
+  const handleTogglePOPData = useCallback(
+    (show: boolean) => {
+      setShowPOPData(show);
+      if (toggleKMLLayer) {
+        toggleKMLLayer("pop");
+      }
+      addNotification({
+        type: show ? "success" : "info",
+        title: "POP Data",
+        message: show
+          ? "📡 POP data shown on map"
+          : "📡 POP data hidden from map",
+        duration: 2000
+      });
+    },
+    [toggleKMLLayer, addNotification]
+  );
+
+  const handleToggleSubPOPData = useCallback(
+    (show: boolean) => {
+      setShowSubPOPData(show);
+      if (toggleKMLLayer) {
+        toggleKMLLayer("subPop");
+      }
+      addNotification({
+        type: show ? "success" : "info",
+        title: "Sub POP Data",
+        message: show
+          ? "🏢 Sub POP data shown on map"
+          : "🏢 Sub POP data hidden from map",
+        duration: 2000
+      });
+    },
+    [toggleKMLLayer, addNotification]
+  );
+
+  const handleToggleManualData = useCallback(
+    (show: boolean) => {
+      setShowManualData(show);
+      // TODO: Implement manual data visibility toggle for DataStore infrastructure data
+      addNotification({
+        type: show ? "success" : "info",
+        title: "Manual Data",
+        message: show
+          ? "✏️ Manual data shown on map"
+          : "✏️ Manual data hidden from map",
         duration: 2000
       });
     },
@@ -779,8 +837,14 @@ const ComprehensiveGoogleMapInterface: React.FC<
           showLayoutManager={showLayoutManager}
           showWorkflowPresets={showWorkflowPresets}
           showKMLLayers={showKMLLayers}
+          showPOPData={showPOPData}
+          showSubPOPData={showSubPOPData}
+          showManualData={showManualData}
           onToolActivation={handleToolActivation}
           onTogglePanel={handleTogglePanel}
+          onTogglePOPData={handleTogglePOPData}
+          onToggleSubPOPData={handleToggleSubPOPData}
+          onToggleManualData={handleToggleManualData}
         />
 
         {/* Multi-Tool System Manager */}
@@ -1040,19 +1104,6 @@ const ComprehensiveGoogleMapInterface: React.FC<
           />
         )}
 
-        {showInfrastructureData && (
-          <InfrastructureDataManagement
-            isOpen={showInfrastructureData}
-            onClose={() => setShowInfrastructureData(false)}
-            currentUserId={user?.id || ""}
-            userRole={user?.role || "viewer"}
-            kmlData={kmlInfrastructureData}
-            toggleKMLLayer={toggleKMLLayer}
-            isKMLLayerVisible={isKMLLayerVisible}
-            map={mapInstance}
-            onLocationAdd={handleLocationAdd}
-          />
-        )}
 
         {showSearchSystem && (
           <ComprehensiveSearchSystem

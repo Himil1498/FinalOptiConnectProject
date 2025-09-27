@@ -92,7 +92,7 @@ export interface InfrastructureData extends BaseDataItem {
     totalCount: number;
     categories: string[];
   };
-  source: 'kml' | 'manual' | 'import';
+  source: 'kml' | 'manual' | 'imported';
 }
 
 export type SavedDataItem = DistanceMeasurement | ElevationAnalysis | PolygonMeasurement | InfrastructureData;

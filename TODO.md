@@ -8,36 +8,41 @@
 
 ## Tasks
 
-### 1. Integrate useUnifiedGeofencing in ComprehensiveGoogleMapInterface.tsx
-- [ ] Import useUnifiedGeofencing hook
-- [ ] Initialize with assignedStates and user config
-- [ ] Replace custom useGeofencing with unified system
-- [ ] Remove duplicate GeofencingSystem components
-- [ ] Add validation to handleToolActivation for each tool
-- [ ] Add validation to handleSearchResultSelect and handleNavigateToLocation
-- [ ] Add validation to handleLocationAdd in InfrastructureDataManagement
+### 1. Create Unified Geofencing Hook
+- [ ] Create `src/hooks/useUnifiedGeofencing.ts` with combined bounds + state validation
+- [ ] Add logging and notifications for violations
+- [ ] Return { validatePoint, isValidRegion, violations, clearViolations, isDataLoaded }
 
-### 2. Update Tool Components for Validation
+### 2. Update ComprehensiveGoogleMapInterface.tsx
+- [ ] Import/use `useUnifiedGeofencing(assignedStates, isGeofencingActive)`
+- [ ] Remove duplicate GeofencingSystem renders; keep one
+- [ ] Add validation to `handleToolActivation`: prevent if invalid region + notify
+- [ ] Add validation to `handleSearchResultSelect`/`handleNavigateToLocation`
+- [ ] Add validation to `handleLocationAdd` in InfrastructureDataManagement
+- [ ] Remove custom `useGeofencing` calls; use unified
+- [ ] Ensure admin bypass: if isAdmin, always valid
+
+### 3. Update Tool Components for Validation
 - [ ] DistanceMeasurementTool.tsx: Add point validation on click
 - [ ] PolygonDrawingTool.tsx: Add point validation on vertex placement
 - [ ] ElevationTool.tsx: Add point validation on analysis points
 
-### 3. Enhance Map Click Validation
+### 4. Enhance Map Click Validation
 - [ ] GoogleMapContainer.tsx: Add click validation using unified system
 - [ ] Ensure notifications are shown for violations
 
-### 4. Update User Region Assignment Display
+### 5. Update User Region Assignment Display
 - [ ] Ensure assigned regions are highlighted properly
 - [ ] Show user their assigned regions on login
 
-### 5. Testing
+### 6. Testing
 - [ ] Test with admin user (no restrictions)
 - [ ] Test with user assigned to specific states
 - [ ] Test tool activation outside assigned regions
 - [ ] Test map clicks outside regions
 - [ ] Verify notifications appear correctly
 
-### 6. Cleanup
+### 7. Cleanup
 - [ ] Remove redundant geofencing code
 - [ ] Ensure consistent error handling
 - [ ] Update documentation

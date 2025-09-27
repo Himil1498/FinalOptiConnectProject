@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePagination } from '../../../hooks/usePagination';
 
 interface KMLDataTabProps {
@@ -7,15 +7,35 @@ interface KMLDataTabProps {
   manuallyAddedData: any[];
   kmlTypeFilter: 'all' | 'pop' | 'subPop';
   kmlSearchTerm: string;
+  advancedFilters: {
+    name: string;
+    type: 'all' | 'pop' | 'subPop';
+    status: string;
+    dateRange: string;
+    latMin: string;
+    latMax: string;
+    lngMin: string;
+    lngMax: string;
+    hasProperties: string;
+    source: string;
+  };
   map?: google.maps.Map | null;
   isSelectingLocation: boolean;
   showPOPData: boolean;
   showSubPOPData: boolean;
+  showManualData?: boolean;
+  showImportedData?: boolean;
+  importedData?: any[];
   onKmlTypeFilterChange: (filter: 'all' | 'pop' | 'subPop') => void;
   onKmlSearchChange: (search: string) => void;
+  onAdvancedFiltersChange: (filters: any) => void;
   onTogglePOPData: (show: boolean) => void;
   onToggleSubPOPData: (show: boolean) => void;
+  onToggleManualData?: (show: boolean) => void;
+  onToggleImportedData?: (show: boolean) => void;
   onExportData: () => void;
+  onSaveToDataManager?: () => void;
+  onSaveImportedData?: () => void;
   onViewLocationOnMap: (item: any) => void;
   onViewDetails: (item: any) => void;
   onExportItem: (item: any) => void;
@@ -31,15 +51,24 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
   manuallyAddedData,
   kmlTypeFilter,
   kmlSearchTerm,
+  advancedFilters,
   map,
   isSelectingLocation,
   showPOPData,
   showSubPOPData,
+  showManualData = true,
+  showImportedData = true,
+  importedData = [],
   onKmlTypeFilterChange,
   onKmlSearchChange,
+  onAdvancedFiltersChange,
   onTogglePOPData,
   onToggleSubPOPData,
+  onToggleManualData,
+  onToggleImportedData,
   onExportData,
+  onSaveToDataManager,
+  onSaveImportedData,
   onViewLocationOnMap,
   onViewDetails,
   onExportItem,
@@ -50,6 +79,9 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
 }) => {
   const pagination = usePagination(filteredKMLData, { itemsPerPage: 10 });
   const { paginatedData, currentPage, totalPages, goToFirst, goToLast, goToPrevious, goToNext, goToPage, pageRange } = pagination;
+
+  // Advanced search state
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -67,6 +99,45 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
             <option value="pop">POP Only</option>
             <option value="subPop">Sub POP Only</option>
           </select>
+          {/* Import Button */}
+          <div className="relative">
+            <input
+              type="file"
+              id="import-file"
+              accept=".kml,.kmz,.json,.csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // Handle file import
+                  console.log('Importing file:', file.name);
+                  // Reset input
+                  e.target.value = '';
+                }
+              }}
+            />
+            <label
+              htmlFor="import-file"
+              className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 text-sm flex items-center space-x-2 cursor-pointer shadow-lg"
+              title="Import KML, JSON, or CSV data files"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span>Import Data</span>
+            </label>
+          </div>
+
+          {onSaveToDataManager && filteredKMLData.length > 0 && (
+            <button
+              onClick={onSaveToDataManager}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center space-x-2"
+              title="Save all KML data to Data Manager for visualization and management"
+            >
+              <span>💾</span>
+              <span>Save to Data Manager</span>
+            </button>
+          )}
           <button
             onClick={onExportData}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
@@ -155,7 +226,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
           🗺️ Map Layer Visibility
         </h4>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           {/* POP Layer Toggle */}
           <div className={`p-4 rounded-lg border transition-all duration-200 ${
             showPOPData
@@ -203,7 +274,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                       ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {kmlData.filter(item => item.type === 'pop').length}
+                    {filteredKMLData.filter(item => item.type === 'pop').length}
                   </span>
                 </div>
                 {showPOPData && (
@@ -265,7 +336,7 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                       ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {kmlData.filter(item => item.type === 'subPop').length}
+                    {filteredKMLData.filter(item => item.type === 'subPop').length}
                   </span>
                 </div>
                 {showSubPOPData && (
@@ -278,6 +349,158 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                 )}
               </div>
             </label>
+          </div>
+
+          {/* Manual Data Toggle */}
+          <div className={`p-4 rounded-lg border transition-all duration-200 ${
+            showManualData
+                ? 'bg-purple-100 border-purple-300'
+                : 'bg-white border-gray-200'
+          }`}>
+              <label className="flex items-start cursor-pointer group">
+                <div className="flex items-center">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showManualData}
+                      onChange={(e) => {
+                        onToggleManualData?.(e.target.checked);
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className={`relative w-11 h-6 rounded-full transition-all duration-300 peer-focus:outline-none peer-focus:ring-4 ${
+                        'bg-gray-200 peer-checked:bg-purple-600 peer-focus:ring-purple-300'
+                    }`}>
+                      <div className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-all duration-300 ${
+                        showManualData ? 'translate-x-full border-white' : ''
+                      }`}></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ml-4 flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">✏️</span>
+                      <div>
+                        <h5 className={`font-semibold ${
+                          'text-gray-900'
+                        }`}>
+                          Manual Data Locations
+                        </h5>
+                        <p className={`text-sm ${
+                          'text-gray-600'
+                        }`}>
+                          Show all manually added locations on the map
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-lg font-bold px-3 py-1 rounded-full ${
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {manuallyAddedData.length}
+                    </span>
+                  </div>
+                  {showManualData && (
+                    <div className="flex items-center text-sm text-purple-600">
+                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Active on map
+                    </div>
+                  )}
+                </div>
+              </label>
+          </div>
+
+          {/* Imported Data Toggle */}
+          <div className={`p-4 rounded-lg border transition-all duration-200 ${
+            showImportedData
+                ? 'bg-orange-100 border-orange-300'
+                : 'bg-white border-gray-200'
+          }`}>
+              <label className="flex items-start cursor-pointer group">
+                <div className="flex items-center">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showImportedData}
+                      onChange={(e) => {
+                        onToggleImportedData?.(e.target.checked);
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className={`relative w-11 h-6 rounded-full transition-all duration-300 peer-focus:outline-none peer-focus:ring-4 ${
+                        'bg-gray-200 peer-checked:bg-orange-600 peer-focus:ring-orange-300'
+                    }`}>
+                      <div className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 rounded-full h-5 w-5 transition-all duration-300 ${
+                        showImportedData ? 'translate-x-full border-white' : ''
+                      }`}></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ml-4 flex-1">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">📥</span>
+                      <div>
+                        <h5 className={`font-semibold ${
+                          'text-gray-900'
+                        }`}>
+                          Imported Data Locations
+                        </h5>
+                        <p className={`text-sm ${
+                          'text-gray-600'
+                        }`}>
+                          Show imported data from CSV, KML, KMZ, XML files
+                        </p>
+                        {importedData.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {Array.from(new Set(importedData.map(item => item.fileType || 'unknown'))).map(fileType => (
+                              <span
+                                key={fileType}
+                                className={`text-xs px-2 py-1 rounded-full border ${
+                                  fileType === 'csv' ? 'bg-green-100 text-green-800 border-green-200' :
+                                  fileType === 'kml' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                  fileType === 'kmz' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                  fileType === 'xml' ? 'bg-red-100 text-red-800 border-red-200' :
+                                  'bg-gray-100 text-gray-800 border-gray-200'
+                                }`}
+                              >
+                                {fileType.toUpperCase()} files
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end space-y-2">
+                      <span className={`text-lg font-bold px-3 py-1 rounded-full ${
+                        'bg-orange-100 text-orange-800'
+                      }`}>
+                        {importedData.length}
+                      </span>
+                      {onSaveImportedData && importedData.length > 0 && (
+                        <button
+                          onClick={onSaveImportedData}
+                          className="px-3 py-1 bg-orange-600 text-white text-xs rounded-full hover:bg-orange-700 transition-colors"
+                        >
+                          💾 Save
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {showImportedData && importedData.length > 0 && (
+                    <div className="flex items-center text-sm text-orange-600">
+                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Active on map
+                    </div>
+                  )}
+                </div>
+              </label>
           </div>
         </div>
 
@@ -333,32 +556,58 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
               </div>
 
               {/* Quick Actions while selecting */}
-              <div className="mt-4 flex space-x-2">
+              <div className="mt-4">
                 <button
                   onClick={onAddManually}
-                  className="flex-1 px-3 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm"
+                  className="w-full group relative overflow-hidden bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white rounded-xl px-4 py-3 transform transition-all duration-300 hover:scale-102 hover:shadow-xl hover:from-orange-600 hover:via-red-600 hover:to-pink-600 active:scale-98"
                 >
-                  ✏️ Add Manually Instead
+                  <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center space-x-2">
+                    <span className="text-xl">✏️</span>
+                    <span className="font-medium">Add Manually Instead</span>
+                  </div>
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -translate-y-8 translate-x-8 group-hover:translate-y-0 group-hover:translate-x-0 transition-transform duration-500"></div>
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               {/* Primary Actions */}
-              <div className="flex space-x-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Select from Map Button */}
                 <button
                   onClick={onSelectLocationFromMap}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center space-x-2"
+                  className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white rounded-xl px-6 py-4 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:from-blue-700 hover:via-blue-800 hover:to-indigo-700 active:scale-95"
                 >
-                  <span>📍</span>
-                  <span>Select from Map</span>
+                  <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center space-x-3">
+                    <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors duration-300">
+                      <span className="text-2xl">📍</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-lg">Select from Map</div>
+                      <div className="text-blue-100 text-sm">Click on map location</div>
+                    </div>
+                  </div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-10 translate-x-10 group-hover:translate-y-0 group-hover:translate-x-0 transition-transform duration-500"></div>
                 </button>
+
+                {/* Add Manually Button */}
                 <button
                   onClick={onAddManually}
-                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm flex items-center justify-center space-x-2"
+                  className="group relative overflow-hidden bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white rounded-xl px-6 py-4 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 active:scale-95"
                 >
-                  <span>✏️</span>
-                  <span>Add Manually</span>
+                  <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative flex items-center justify-center space-x-3">
+                    <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors duration-300">
+                      <span className="text-2xl">✏️</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-lg">Add Manually</div>
+                      <div className="text-green-100 text-sm">Enter coordinates</div>
+                    </div>
+                  </div>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-10 translate-x-10 group-hover:translate-y-0 group-hover:translate-x-0 transition-transform duration-500"></div>
                 </button>
               </div>
             </div>
@@ -386,8 +635,15 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
             </svg>
           </div>
         </div>
-        <button className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-          Advanced Search
+        <button
+          onClick={() => setShowAdvancedSearch(true)}
+          className="group relative overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-2 rounded-lg transform transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95"
+        >
+          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <div className="relative flex items-center space-x-2">
+            <span>🔍</span>
+            <span className="font-medium">Advanced Search</span>
+          </div>
         </button>
       </div>
 
@@ -600,6 +856,228 @@ const KMLDataTab: React.FC<KMLDataTabProps> = ({
                   </svg>
                 </button>
               </nav>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Advanced Search Modal */}
+      {showAdvancedSearch && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div className="px-6 py-4 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center">
+                  <span className="mr-2">🔍</span>
+                  Advanced Search & Filters
+                </h3>
+                <button
+                  onClick={() => setShowAdvancedSearch(false)}
+                  className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-2 transition-all duration-200"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Text Search */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                <h4 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+                  <span className="mr-2">📝</span>
+                  Text Search
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-blue-700 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={advancedFilters.name}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, name: e.target.value })}
+                      placeholder="Search by location name..."
+                      className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Type & Status Filters */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                <h4 className="text-lg font-semibold text-green-900 mb-3 flex items-center">
+                  <span className="mr-2">🏷️</span>
+                  Categories & Status
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-green-700 mb-1">Type</label>
+                    <select
+                      value={advancedFilters.type}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, type: e.target.value as 'all' | 'pop' | 'subPop' })}
+                      className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="all">All Types</option>
+                      <option value="pop">📡 POP Only</option>
+                      <option value="subPop">🏢 Sub POP Only</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-green-700 mb-1">Status</label>
+                    <select
+                      value={advancedFilters.status}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, status: e.target.value })}
+                      className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">✅ Active</option>
+                      <option value="inactive">❌ Inactive</option>
+                      <option value="planned">🔄 Planned</option>
+                      <option value="maintenance">🔧 Maintenance</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Geographic Filters */}
+              <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-4 border border-orange-200">
+                <h4 className="text-lg font-semibold text-orange-900 mb-3 flex items-center">
+                  <span className="mr-2">🗺️</span>
+                  Geographic Boundaries
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-orange-700 mb-1">Min Latitude</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={advancedFilters.latMin}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, latMin: e.target.value })}
+                      placeholder="e.g., 12.000000"
+                      className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-700 mb-1">Max Latitude</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={advancedFilters.latMax}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, latMax: e.target.value })}
+                      placeholder="e.g., 28.000000"
+                      className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-700 mb-1">Min Longitude</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={advancedFilters.lngMin}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, lngMin: e.target.value })}
+                      placeholder="e.g., 68.000000"
+                      className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-orange-700 mb-1">Max Longitude</label>
+                    <input
+                      type="number"
+                      step="0.000001"
+                      value={advancedFilters.lngMax}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, lngMax: e.target.value })}
+                      placeholder="e.g., 97.000000"
+                      className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Properties */}
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                <h4 className="text-lg font-semibold text-purple-900 mb-3 flex items-center">
+                  <span className="mr-2">📊</span>
+                  Data Properties
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-1">Has Properties</label>
+                    <select
+                      value={advancedFilters.hasProperties}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, hasProperties: e.target.value })}
+                      className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="all">All Locations</option>
+                      <option value="yes">📋 With Properties</option>
+                      <option value="no">📄 Without Properties</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-1">Data Source</label>
+                    <select
+                      value={advancedFilters.source}
+                      onChange={(e) => onAdvancedFiltersChange({ ...advancedFilters, source: e.target.value })}
+                      className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="all">All Sources</option>
+                      <option value="manual">✏️ Manual Entry</option>
+                      <option value="kml">🗺️ KML File</option>
+                      <option value="imported">📥 Imported</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter Summary */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                  <span className="mr-2">📈</span>
+                  Filter Summary
+                </h4>
+                <div className="text-sm text-gray-600">
+                  <p>Applied filters will be combined with your basic search and displayed in the main table.</p>
+                  <p className="mt-1">Total locations in current view: <span className="font-semibold text-gray-900">{filteredKMLData.length}</span></p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t bg-gray-50 flex justify-between">
+              <button
+                onClick={() => {
+                  onAdvancedFiltersChange({
+                    name: '',
+                    type: 'all',
+                    status: 'all',
+                    dateRange: 'all',
+                    latMin: '',
+                    latMax: '',
+                    lngMin: '',
+                    lngMax: '',
+                    hasProperties: 'all',
+                    source: 'all'
+                  });
+                }}
+                className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                🔄 Reset Filters
+              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowAdvancedSearch(false)}
+                  className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Apply filters logic will be handled by the existing filteredKMLData useMemo
+                    setShowAdvancedSearch(false);
+                  }}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
+                >
+                  🔍 Apply Filters
+                </button>
+              </div>
             </div>
           </div>
         </div>
