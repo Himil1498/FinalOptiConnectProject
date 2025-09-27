@@ -381,57 +381,42 @@ const ComprehensiveGoogleMapInterface: React.FC<
   );
 
   // Infrastructure data visibility handlers
-  const handleTogglePOPData = useCallback(
-    (show: boolean) => {
-      setShowPOPData(show);
-      if (toggleKMLLayer) {
-        toggleKMLLayer("pop");
-      }
-      addNotification({
-        type: show ? "success" : "info",
-        title: "POP Data",
-        message: show
-          ? "📡 POP data shown on map"
-          : "📡 POP data hidden from map",
-        duration: 2000
-      });
-    },
-    [toggleKMLLayer, addNotification]
-  );
+  const handleTogglePOPData = useCallback((show: boolean) => {
+    setShowPOPData(show);
+    if (toggleKMLLayer) {
+      toggleKMLLayer("pop");
+    }
+    addNotification({
+      type: show ? "success" : "info",
+      title: "POP Data",
+      message: show ? "📡 POP data shown on map" : "📡 POP data hidden from map",
+      duration: 2000
+    });
+  }, [toggleKMLLayer, addNotification]);
 
-  const handleToggleSubPOPData = useCallback(
-    (show: boolean) => {
-      setShowSubPOPData(show);
-      if (toggleKMLLayer) {
-        toggleKMLLayer("subPop");
-      }
-      addNotification({
-        type: show ? "success" : "info",
-        title: "Sub POP Data",
-        message: show
-          ? "🏢 Sub POP data shown on map"
-          : "🏢 Sub POP data hidden from map",
-        duration: 2000
-      });
-    },
-    [toggleKMLLayer, addNotification]
-  );
+  const handleToggleSubPOPData = useCallback((show: boolean) => {
+    setShowSubPOPData(show);
+    if (toggleKMLLayer) {
+      toggleKMLLayer("subPop");
+    }
+    addNotification({
+      type: show ? "success" : "info",
+      title: "Sub POP Data",
+      message: show ? "🏢 Sub POP data shown on map" : "🏢 Sub POP data hidden from map",
+      duration: 2000
+    });
+  }, [toggleKMLLayer, addNotification]);
 
-  const handleToggleManualData = useCallback(
-    (show: boolean) => {
-      setShowManualData(show);
-      // TODO: Implement manual data visibility toggle for DataStore infrastructure data
-      addNotification({
-        type: show ? "success" : "info",
-        title: "Manual Data",
-        message: show
-          ? "✏️ Manual data shown on map"
-          : "✏️ Manual data hidden from map",
-        duration: 2000
-      });
-    },
-    [addNotification]
-  );
+  const handleToggleManualData = useCallback((show: boolean) => {
+    setShowManualData(show);
+    // TODO: Implement manual data visibility toggle for DataStore infrastructure data
+    addNotification({
+      type: show ? "success" : "info",
+      title: "Manual Data",
+      message: show ? "✏️ Manual data shown on map" : "✏️ Manual data hidden from map",
+      duration: 2000
+    });
+  }, [addNotification]);
 
   // Workflow system handlers
   const handleWorkflowStart = useCallback(
@@ -1104,6 +1089,19 @@ const ComprehensiveGoogleMapInterface: React.FC<
           />
         )}
 
+        {showInfrastructureData && (
+          <InfrastructureDataManagement
+            isOpen={showInfrastructureData}
+            onClose={() => setShowInfrastructureData(false)}
+            currentUserId={user?.id || ""}
+            userRole={user?.role || "viewer"}
+            kmlData={kmlInfrastructureData}
+            toggleKMLLayer={toggleKMLLayer}
+            isKMLLayerVisible={isKMLLayerVisible}
+            map={mapInstance}
+            onLocationAdd={handleLocationAdd}
+          />
+        )}
 
         {showSearchSystem && (
           <ComprehensiveSearchSystem

@@ -1335,21 +1335,59 @@ ${items
         return;
       }
 
-      // Here you would save the imported data to your DataStore
-      // For now, we'll simulate this
+      // Convert imported data to InfrastructureData format
+      const importedLocations = importedData.map((item) => ({
+        id: item.id || `import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: item.name || "Imported Location",
+        lat: item.coordinates?.lat || item.lat || 0,
+        lng: item.coordinates?.lng || item.lng || 0,
+        type: item.type === "pop" ? ("pop" as const) :
+              item.type === "subPop" ? ("subPop" as const) :
+              ("custom" as const),
+        status: item.extendedData?.status || "active",
+        properties: {
+          ...item.extendedData,
+          originalFileType: item.fileType,
+          importedAt: new Date().toISOString(),
+          description: item.description
+        }
+      }));
+
+      const infrastructureData: Omit<
+        InfrastructureData,
+        "id" | "createdAt" | "updatedAt" | "metadata"
+      > = {
+        name: generateDataName("infrastructure", "Imported Infrastructure"),
+        type: "infrastructure" as const,
+        description: `Imported infrastructure data with ${importedData.length} locations from ${Array.from(new Set(importedData.map(item => item.fileType || 'file'))).join(', ')} files`,
+        tags: ["imported", "infrastructure", "bulk-save"],
+        category: "Infrastructure",
+        data: {
+          locations: importedLocations,
+          totalCount: importedData.length,
+          categories: ["IMPORTED", "POP", "SUB_POP"]
+        },
+        source: "imported" as const
+      };
+
+      const savedId = await saveData(infrastructureData);
+
       addNotification({
         type: "success",
-        message: `Saved ${importedData.length} imported locations to DataStore`,
-        duration: 3000
+        message: `📥 Saved ${importedData.length} imported locations to Data Manager`,
+        duration: 4000
       });
+
+      console.log("Imported data saved to DataStore with ID:", savedId);
     } catch (error) {
+      console.error("Failed to save imported data:", error);
       addNotification({
         type: "error",
-        message: "Failed to save imported data",
+        message: "Failed to save imported data to Data Manager",
         duration: 3000
       });
     }
-  }, [importedData, addNotification]);
+  }, [importedData, saveData, generateDataName, addNotification]);
 
   const highlightSearchTerm = useCallback(
     (text: string, term: string): React.ReactNode => {
