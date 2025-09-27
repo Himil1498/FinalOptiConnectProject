@@ -46,9 +46,17 @@ interface FloatingToolPanelProps {
   showWorkflowPresets: boolean;
   showKMLLayers: boolean;
 
+  // Infrastructure data visibility
+  showPOPData?: boolean;
+  showSubPOPData?: boolean;
+  showManualData?: boolean;
+
   // Handlers
   onToolActivation: (toolName: string) => void;
   onTogglePanel: (panelName: string) => void;
+  onTogglePOPData?: (show: boolean) => void;
+  onToggleSubPOPData?: (show: boolean) => void;
+  onToggleManualData?: (show: boolean) => void;
 }
 
 const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
@@ -67,8 +75,14 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
   showLayoutManager,
   showWorkflowPresets,
   showKMLLayers,
+  showPOPData = false,
+  showSubPOPData = false,
+  showManualData = false,
   onToolActivation,
-  onTogglePanel
+  onTogglePanel,
+  onTogglePOPData,
+  onToggleSubPOPData,
+  onToggleManualData
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -195,7 +209,7 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
       isActive: showInfrastructureData,
       color: "teal",
       iconColor: "text-teal-600",
-      onClick: () => onTogglePanel("infrastructure")
+      onClick: () => navigate("/infrastructure")
     },
     {
       id: "data",
@@ -546,6 +560,117 @@ const FloatingToolPanel: React.FC<FloatingToolPanelProps> = ({
               ))}
             </div>
           </>
+
+          {/* Infrastructure Visibility Section */}
+          {(onTogglePOPData || onToggleSubPOPData || onToggleManualData) && (
+            <>
+              {!isCollapsed && (
+                <div className="mb-2">
+                  <div className="relative mb-3">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gradient border-blue-200"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-3 py-1 bg-white text-gray-500 rounded-full border border-blue-200 shadow-sm">
+                        <BuildingOfficeIcon className="w-3 h-3 inline mr-1 text-blue-500" />
+                        <span className="text-blue-600 font-semibold">
+                          Infrastructure
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className={`space-y-1 ${isCollapsed ? "px-1" : "px-0"}`}>
+                {/* POP Data Toggle */}
+                {onTogglePOPData && (
+                  <div
+                    className={`flex items-center ${
+                      isCollapsed ? "justify-center" : "justify-between"
+                    }
+                                  bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2`}
+                  >
+                    {!isCollapsed && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm">📡</span>
+                        <span className="text-xs font-medium text-red-700">
+                          POP Data
+                        </span>
+                      </div>
+                    )}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showPOPData}
+                        onChange={(e) => onTogglePOPData(e.target.checked)}
+                        className="sr-only peer"
+                        title={isCollapsed ? "Toggle POP Data" : ""}
+                      />
+                      <div className="relative w-8 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-red-500"></div>
+                    </label>
+                  </div>
+                )}
+
+                {/* Sub POP Data Toggle */}
+                {onToggleSubPOPData && (
+                  <div
+                    className={`flex items-center ${
+                      isCollapsed ? "justify-center" : "justify-between"
+                    }
+                                  bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2`}
+                  >
+                    {!isCollapsed && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm">🏢</span>
+                        <span className="text-xs font-medium text-green-700">
+                          Sub POP
+                        </span>
+                      </div>
+                    )}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showSubPOPData}
+                        onChange={(e) => onToggleSubPOPData(e.target.checked)}
+                        className="sr-only peer"
+                        title={isCollapsed ? "Toggle Sub POP Data" : ""}
+                      />
+                      <div className="relative w-8 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                  </div>
+                )}
+
+                {/* Manual Data Toggle */}
+                {onToggleManualData && (
+                  <div
+                    className={`flex items-center ${
+                      isCollapsed ? "justify-center" : "justify-between"
+                    }
+                                  bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-2`}
+                  >
+                    {!isCollapsed && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm">✏️</span>
+                        <span className="text-xs font-medium text-blue-700">
+                          Manual
+                        </span>
+                      </div>
+                    )}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showManualData}
+                        onChange={(e) => onToggleManualData(e.target.checked)}
+                        className="sr-only peer"
+                        title={isCollapsed ? "Toggle Manual Data" : ""}
+                      />
+                      <div className="relative w-8 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-500"></div>
+                    </label>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

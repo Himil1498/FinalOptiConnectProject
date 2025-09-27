@@ -112,32 +112,58 @@ const InfrastructureAddForm: React.FC<InfrastructureAddFormProps> = ({
                   </div>
 
                   {/* Quick Actions while selecting */}
-                  <div className="mt-4 flex space-x-2">
+                  <div className="mt-4">
                     <button
                       onClick={onAddManually}
-                      className="flex-1 px-3 py-2 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm"
+                      className="w-full group relative overflow-hidden bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white rounded-xl px-4 py-3 transform transition-all duration-300 hover:scale-102 hover:shadow-xl hover:from-orange-600 hover:via-red-600 hover:to-pink-600 active:scale-98"
                     >
-                      ✏️ Add Manually Instead
+                      <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative flex items-center justify-center space-x-2">
+                        <span className="text-xl">✏️</span>
+                        <span className="font-medium">Add Manually Instead</span>
+                      </div>
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -translate-y-8 translate-x-8 group-hover:translate-y-0 group-hover:translate-x-0 transition-transform duration-500"></div>
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {/* Primary Actions */}
-                  <div className="flex space-x-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Select from Map Button */}
                     <button
                       onClick={onSelectLocationFromMap}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center justify-center space-x-2"
+                      className="group relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white rounded-xl px-6 py-4 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:from-blue-700 hover:via-blue-800 hover:to-indigo-700 active:scale-95"
                     >
-                      <span>📍</span>
-                      <span>Select from Map</span>
+                      <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative flex items-center justify-center space-x-3">
+                        <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors duration-300">
+                          <span className="text-2xl">📍</span>
+                        </div>
+                        <div className="text-left">
+                          <div className="font-semibold text-lg">Select from Map</div>
+                          <div className="text-blue-100 text-sm">Click on map location</div>
+                        </div>
+                      </div>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-10 translate-x-10 group-hover:translate-y-0 group-hover:translate-x-0 transition-transform duration-500"></div>
                     </button>
+
+                    {/* Add Manually Button */}
                     <button
                       onClick={onAddManually}
-                      className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm flex items-center justify-center space-x-2"
+                      className="group relative overflow-hidden bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 text-white rounded-xl px-6 py-4 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:from-emerald-700 hover:via-green-700 hover:to-teal-700 active:scale-95"
                     >
-                      <span>✏️</span>
-                      <span>Add Manually</span>
+                      <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <div className="relative flex items-center justify-center space-x-3">
+                        <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-full group-hover:bg-white/30 transition-colors duration-300">
+                          <span className="text-2xl">✏️</span>
+                        </div>
+                        <div className="text-left">
+                          <div className="font-semibold text-lg">Add Manually</div>
+                          <div className="text-green-100 text-sm">Enter coordinates</div>
+                        </div>
+                      </div>
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-10 translate-x-10 group-hover:translate-y-0 group-hover:translate-x-0 transition-transform duration-500"></div>
                     </button>
                   </div>
                 </div>

@@ -51,7 +51,10 @@
       "Bash(for file in InfrastructureAddForm.tsx KMLDataTab.tsx InfrastructureCategoriesTab.tsx InfrastructureReportsTab.tsx)",
       "Bash(tail:*)",
       "Bash(for i in 82 86 93 96 104 108 115 118 126 130 137 140 150 153 162 165 179 196 201 210 230 233 247 264 269 278 298 301)",
-      "Bash(do sed -i \"$is/isDark ? ''[^'']*'' : //\" \"C:\\Users\\hkcha\\OneDrive\\Desktop\\FinalOptiConnectProject\\src\\components\\admin\\infrastructure\\KMLDataTab.tsx\")"
+      "Bash(do sed -i \"$is/isDark ? ''[^'']*'' : //\" \"C:\\Users\\hkcha\\OneDrive\\Desktop\\FinalOptiConnectProject\\src\\components\\admin\\infrastructure\\KMLDataTab.tsx\")",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

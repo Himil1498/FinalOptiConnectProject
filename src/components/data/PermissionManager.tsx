@@ -27,6 +27,7 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({
   const mockUsers: User[] = [
     {
       id: 'user1',
+      username: 'manager01',
       email: 'manager@opticonnect.com',
       name: 'Regional Manager',
       role: 'manager',
@@ -38,6 +39,7 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({
     },
     {
       id: 'user2',
+      username: 'tech01',
       email: 'tech@opticonnect.com',
       name: 'Field Technician',
       role: 'technician',
@@ -49,6 +51,7 @@ const PermissionManager: React.FC<PermissionManagerProps> = ({
     },
     {
       id: 'user3',
+      username: 'analyst01',
       email: 'analyst@opticonnect.com',
       name: 'Data Analyst',
       role: 'viewer',

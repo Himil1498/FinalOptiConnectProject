@@ -33,6 +33,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     {
       id: '1',
       email: 'admin@opticonnect.com',
+      username: 'admin',
       name: 'Admin User',
       role: 'admin',
       permissions: ['all'],
@@ -48,6 +49,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     {
       id: '2',
       email: 'manager@opticonnect.com',
+      username: 'regmanager',
       name: 'Regional Manager',
       role: 'manager',
       permissions: ['read', 'write', 'manage_users', 'view_analytics'],
@@ -63,6 +65,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     {
       id: '3',
       email: 'tech@opticonnect.com',
+      username: 'fieldtech',
       name: 'Field Technician',
       role: 'technician',
       permissions: ['read', 'write', 'manage_equipment'],
@@ -78,6 +81,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
     {
       id: '4',
       email: 'viewer@opticonnect.com',
+      username: 'analyst',
       name: 'Data Analyst',
       role: 'viewer',
       permissions: ['read', 'view_basic_analytics'],

@@ -15,6 +15,7 @@ import BaseMapPage from "./pages/BaseMapPage";
 import DataManagerPage from "./pages/DataManagerPage";
 import { useAuth } from "./hooks/useAuth";
 import Users from "./pages/Users";
+import InfrastructurePage from "./pages/InfrastructurePage";
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -74,6 +75,16 @@ const AppContent: React.FC = () => {
         element={
           isAuthenticated ? (
             <DataManagerPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/infrastructure"
+        element={
+          isAuthenticated ? (
+            <InfrastructurePage />
           ) : (
             <Navigate to="/login" replace />
           )

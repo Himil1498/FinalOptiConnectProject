@@ -20,6 +20,7 @@ export const useAuth = () => {
       if (email === 'admin@opticonnect.com' && password === 'password') {
         dispatch(loginSuccess({
           id: '1',
+          username: 'admin',
           email: 'admin@opticonnect.com',
           name: 'Admin User',
           role: 'admin',
@@ -32,6 +33,7 @@ export const useAuth = () => {
       } else if (email === 'manager@opticonnect.com' && password === 'password') {
         dispatch(loginSuccess({
           id: '2',
+          username: 'manager01',
           email: 'manager@opticonnect.com',
           name: 'Regional Manager',
           role: 'manager',
@@ -46,6 +48,7 @@ export const useAuth = () => {
       } else if (email === 'tech@opticonnect.com' && password === 'password') {
         dispatch(loginSuccess({
           id: '3',
+          username: 'tech01',
           email: 'tech@opticonnect.com',
           name: 'Field Technician',
           role: 'technician',
@@ -60,6 +63,7 @@ export const useAuth = () => {
       } else if (email === 'user@opticonnect.com' && password === 'password') {
         dispatch(loginSuccess({
           id: '4',
+          username: 'user01',
           email: 'user@opticonnect.com',
           name: 'Regular User',
           role: 'viewer',

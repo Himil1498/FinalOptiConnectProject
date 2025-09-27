@@ -837,16 +837,19 @@ import { useNavigate, Link } from "react-router-dom";
 import AdminUserCreationForm from "../components/admin/AdminUserCreationForm";
 import BulkUserImport from "../components/admin/BulkUserImport";
 import UserActivityMonitor from "../components/admin/UserActivityMonitor";
+import UserGroupManagement from "../components/admin/UserGroupManagement";
 import { useAuth } from "../hooks/useAuth";
+import { useUserManagement } from "../hooks/useUserManagement";
 import { User } from "../types";
 import NavigationBar from "../components/common/NavigationBar";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 const Users: React.FC = () => {
   const { user } = useAuth();
+  const userManagement = useUserManagement();
 
   // State management
-  const [users, setUsers] = useState<User[]>([]);
+  const [activeTab, setActiveTab] = useState<"users" | "groups">("users");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
@@ -864,105 +867,13 @@ const Users: React.FC = () => {
   const [showPasswordChange, setShowPasswordChange] = useState<User | null>(
     null
   );
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  // Initialize mock users data
+  // Load users and user groups from user management system
   useEffect(() => {
-    const mockUsers: User[] = [
-      {
-        id: "1",
-        email: "admin@opticonnect.com",
-        name: "Admin User",
-        role: "admin",
-        permissions: ["all"],
-        assignedStates: [],
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        phoneNumber: "+91-9876543210",
-        department: "IT Support",
-        employeeId: "EMP001",
-        gender: "male",
-        address: {
-          street: "123 Admin Street",
-          city: "New Delhi",
-          state: "Delhi",
-          pinCode: "110001"
-        },
-        supervisorName: "CEO",
-        officeLocation: "Delhi Head Office"
-      },
-      {
-        id: "2",
-        email: "manager@opticonnect.com",
-        name: "Regional Manager",
-        role: "manager",
-        permissions: ["view", "edit"],
-        assignedStates: ["Maharashtra", "Gujarat"],
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        phoneNumber: "+91-9876543211",
-        department: "Operations",
-        employeeId: "EMP002",
-        gender: "female",
-        address: {
-          street: "456 Manager Ave",
-          city: "Mumbai",
-          state: "Maharashtra",
-          pinCode: "400001"
-        },
-        supervisorName: "Admin User",
-        officeLocation: "Mumbai Branch"
-      },
-      {
-        id: "3",
-        email: "tech@opticonnect.com",
-        name: "Field Technician",
-        role: "technician",
-        permissions: ["view"],
-        assignedStates: ["Maharashtra"],
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        phoneNumber: "+91-9876543212",
-        department: "Engineering",
-        employeeId: "EMP003",
-        gender: "male",
-        address: {
-          street: "789 Tech Park",
-          city: "Pune",
-          state: "Maharashtra",
-          pinCode: "411001"
-        },
-        supervisorName: "Regional Manager",
-        officeLocation: "Pune Development Center"
-      },
-      {
-        id: "4",
-        email: "user@opticonnect.com",
-        name: "Regular User",
-        role: "viewer",
-        permissions: ["view"],
-        assignedStates: ["Maharashtra", "Gujarat", "Rajasthan"],
-        isActive: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        phoneNumber: "+91-9876543213",
-        department: "Customer Support",
-        employeeId: "EMP004",
-        gender: "female",
-        address: {
-          street: "321 Support Lane",
-          city: "Jaipur",
-          state: "Rajasthan",
-          pinCode: "302001"
-        },
-        supervisorName: "Regional Manager",
-        officeLocation: "Jaipur Office"
-      }
-    ];
-    setUsers(mockUsers);
-  }, []);
+    userManagement.loadUsers();
+    userManagement.loadUserGroups();
+  }, [userManagement.loadUsers, userManagement.loadUserGroups]);
 
   // Only allow admin users to access user management
   if (!user || user.role !== "admin") {
@@ -994,10 +905,11 @@ const Users: React.FC = () => {
   }
 
   // Filter users based on search and filters
-  const filteredUsers = users.filter((userItem) => {
+  const filteredUsers = userManagement.users.filter((userItem) => {
     const matchesSearch =
       userItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       userItem.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userItem.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       userItem.employeeId?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesRole =
@@ -1015,10 +927,10 @@ const Users: React.FC = () => {
 
   // Statistics
   const stats = {
-    total: users.length,
-    active: users.filter((u) => u.isActive).length,
-    inactive: users.filter((u) => !u.isActive).length,
-    roles: Array.from(new Set(users.map((u) => u.role))).length
+    total: userManagement.users.length,
+    active: userManagement.users.filter((u) => u.isActive).length,
+    inactive: userManagement.users.filter((u) => !u.isActive).length,
+    roles: Array.from(new Set(userManagement.users.map((u) => u.role))).length
   };
 
   // CRUD operations
@@ -1033,15 +945,24 @@ const Users: React.FC = () => {
   };
 
   const handleDeleteUser = (userId: string) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    const user = userManagement.users.find((u: User) => u.id === userId);
+    if (user) {
+      setUserToDelete(user);
+    }
+  };
+
+  const confirmDeleteUser = () => {
+    if (userToDelete) {
+      userManagement.deleteUser(userToDelete.id);
+      setUserToDelete(null);
     }
   };
 
   const handleToggleUserStatus = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, isActive: !u.isActive } : u))
-    );
+    const user = userManagement.users.find((u: User) => u.id === userId);
+    if (user) {
+      userManagement.updateUser(userId, { isActive: !user.isActive });
+    }
   };
 
   const handleBulkAction = (action: "activate" | "deactivate" | "delete") => {
@@ -1053,16 +974,16 @@ const Users: React.FC = () => {
           `Are you sure you want to delete ${selectedUsers.length} users?`
         )
       ) {
-        setUsers((prev) => prev.filter((u) => !selectedUsers.includes(u.id)));
+        selectedUsers.forEach(userId => {
+          userManagement.deleteUser(userId);
+        });
         setSelectedUsers([]);
       }
     } else {
       const newStatus = action === "activate";
-      setUsers((prev) =>
-        prev.map((u) =>
-          selectedUsers.includes(u.id) ? { ...u, isActive: newStatus } : u
-        )
-      );
+      selectedUsers.forEach(userId => {
+        userManagement.updateUser(userId, { isActive: newStatus });
+      });
       setSelectedUsers([]);
     }
   };
@@ -1172,7 +1093,70 @@ const Users: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Tab Navigation */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab("users")}
+              className={`${
+                activeTab === "users"
+                  ? "border-blue-500 text-blue-600 bg-blue-50"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors`}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
+                />
+              </svg>
+              <span>Users</span>
+              <span className="bg-gray-100 text-gray-900 ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                {userManagement.users.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("groups")}
+              className={`${
+                activeTab === "groups"
+                  ? "border-blue-500 text-blue-600 bg-blue-50"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              } whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors`}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+              <span>User Groups</span>
+              <span className="bg-gray-100 text-gray-900 ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium">
+                {userManagement.userGroups.length}
+              </span>
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "users" && (
+        <>
+          {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -1440,7 +1424,7 @@ const Users: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-blue-50 transition-colors duration-200 border-l-4 border-transparent hover:border-blue-400">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
@@ -1460,21 +1444,36 @@ const Users: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700">
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                            user.isActive
+                              ? 'bg-gradient-to-br from-blue-400 to-purple-500 text-white'
+                              : 'bg-gray-300 text-gray-700'
+                          }`}>
+                            <span className="text-sm font-bold">
                               {user.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className={`text-sm font-semibold ${
+                            user.isActive ? 'text-gray-900' : 'text-gray-500'
+                          }`}>
                             {user.name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className={`text-sm ${
+                            user.isActive ? 'text-blue-600' : 'text-gray-400'
+                          }`}>
                             {user.email}
                           </div>
+                          <div className={`text-sm font-medium ${
+                            user.isActive ? 'text-green-600' : 'text-gray-400'
+                          }`}>
+                            @{user.username}
+                          </div>
                           {user.employeeId && (
-                            <div className="text-xs text-gray-400">
+                            <div className={`text-xs font-medium ${
+                              user.isActive ? 'text-purple-600' : 'text-gray-400'
+                            }`}>
                               ID: {user.employeeId}
                             </div>
                           )}
@@ -1483,50 +1482,64 @@ const Users: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        className={`inline-flex items-center px-3 py-1 text-xs font-bold rounded-full border-2 ${
                           user.role === "admin"
-                            ? "bg-red-100 text-red-800"
+                            ? "bg-red-100 text-red-800 border-red-200"
                             : user.role === "manager"
-                            ? "bg-blue-100 text-blue-800"
+                            ? "bg-blue-100 text-blue-800 border-blue-200"
                             : user.role === "technician"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-purple-100 text-purple-800 border-purple-200"
                         }`}
                       >
-                        {user.role}
+                        {user.role === "admin" && "👑 "}
+                        {user.role === "manager" && "⚡ "}
+                        {user.role === "technician" && "🔧 "}
+                        {user.role === "viewer" && "👁️ "}
+                        {user.role.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.department || "-"}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`text-sm font-medium ${
+                        user.department ? 'text-gray-900' : 'text-gray-400'
+                      }`}>
+                        {user.department || "No Department"}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div
-                          className={`w-2 h-2 rounded-full mr-2 ${
-                            user.isActive ? "bg-green-400" : "bg-red-400"
+                          className={`w-3 h-3 rounded-full mr-2 border-2 ${
+                            user.isActive
+                              ? "bg-green-400 border-green-500 shadow-lg"
+                              : "bg-red-400 border-red-500 shadow-lg"
                           }`}
                         ></div>
                         <span
-                          className={`text-sm ${
+                          className={`text-sm font-semibold ${
                             user.isActive ? "text-green-700" : "text-red-700"
                           }`}
                         >
-                          {user.isActive ? "Active" : "Inactive"}
+                          {user.isActive ? "✅ Active" : "❌ Inactive"}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.assignedStates?.length ? (
-                        <div className="max-w-xs">
-                          {user.assignedStates.length <= 2
-                            ? user.assignedStates.join(", ")
-                            : `${user.assignedStates.slice(0, 2).join(", ")} +${
-                                user.assignedStates.length - 2
-                              } more`}
-                        </div>
-                      ) : (
-                        "All States"
-                      )}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {user.assignedStates?.length ? (
+                          <div className="max-w-xs">
+                            <span className="text-indigo-600">
+                              {user.assignedStates.length <= 2
+                                ? user.assignedStates.join(", ")
+                                : `${user.assignedStates.slice(0, 2).join(", ")} +${
+                                    user.assignedStates.length - 2
+                                  } more`}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-green-600 font-semibold">🌍 All States</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
@@ -1699,18 +1712,9 @@ const Users: React.FC = () => {
               }}
               onUserCreated={(newUser: any) => {
                 if (editingUser) {
-                  setUsers((prev) =>
-                    prev.map((u) =>
-                      u.id === editingUser.id
-                        ? { ...u, ...newUser, id: editingUser.id }
-                        : u
-                    )
-                  );
+                  userManagement.updateUser(editingUser.id, newUser);
                 } else {
-                  setUsers((prev) => [
-                    ...prev,
-                    { ...newUser, id: `user-${Date.now()}` }
-                  ]);
+                  userManagement.createUser(newUser);
                 }
                 setShowCreateForm(false);
                 setEditingUser(null);
@@ -2010,6 +2014,123 @@ const Users: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+            {/* Header with gradient */}
+            <div className="px-6 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold">
+                    Delete User Confirmation
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setUserToDelete(null)}
+                  className="text-red-200 hover:text-white transition-colors rounded-full p-1 hover:bg-red-500"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              {/* User Info Card */}
+              <div className="mb-6 p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {userToDelete.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {userToDelete.name}
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      {userToDelete.email}
+                    </p>
+                    <div className="flex items-center mt-1 space-x-3">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                        userToDelete.role === 'admin' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                        userToDelete.role === 'manager' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                        userToDelete.role === 'technician' ? 'bg-green-100 text-green-800 border-green-200' :
+                        'bg-gray-100 text-gray-800 border-gray-200'
+                      }`}>
+                        {userToDelete.role.charAt(0).toUpperCase() + userToDelete.role.slice(1)}
+                      </span>
+                      {userToDelete.department && (
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded border">
+                          {userToDelete.department}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Message */}
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <svg className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <h5 className="text-sm font-medium text-red-800 mb-1">
+                      This action cannot be undone
+                    </h5>
+                    <p className="text-sm text-red-700">
+                      Are you sure you want to permanently delete <span className="font-semibold">{userToDelete.name}</span>?
+                      This will remove all their data, permissions, and access to the system.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setUserToDelete(null)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteUser}
+                  className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 rounded-lg hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 transition-all duration-200 shadow-lg"
+                >
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span>Delete User</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {/* User Groups Tab Content */}
+      {activeTab === "groups" && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <UserGroupManagement
+            isOpen={true}
+            onClose={() => {}}
+          />
         </div>
       )}
     </div>

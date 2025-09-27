@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
+import { useDataStore } from '../../contexts/DataStoreContext';
 
 export interface POPLocationData {
   id?: string;
@@ -47,6 +48,7 @@ const AddPOPLocationForm: React.FC<AddPOPLocationFormProps> = ({
   editingData
 }) => {
   const { addNotification } = useTheme();
+  const { saveData, generateDataName } = useDataStore();
 
   const [formData, setFormData] = useState<POPLocationData>({
     id: '',
@@ -142,7 +144,7 @@ const AddPOPLocationForm: React.FC<AddPOPLocationFormProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -156,17 +158,78 @@ const AddPOPLocationForm: React.FC<AddPOPLocationFormProps> = ({
       return;
     }
 
-    // Add timestamps
-    const now = new Date().toISOString();
-    const finalData = {
-      ...formData,
-      id: editingData?.id || Date.now().toString(),
-      created_on: editingData?.id ? undefined : now,
-      updated_on: now
-    };
+    try {
+      // Add timestamps
+      const now = new Date().toISOString();
+      const finalData = {
+        ...formData,
+        id: editingData?.id || Date.now().toString(),
+        created_on: editingData?.id ? undefined : now,
+        updated_on: now
+      };
 
-    onSave(finalData);
-    onClose();
+      // Save to DataStore as Infrastructure data
+      const infrastructureData = {
+        name: formData.name,
+        type: 'infrastructure' as const,
+        category: 'Infrastructure',
+        description: `${formData.type.toUpperCase()} location: ${formData.address || 'Manual entry'}`,
+        tags: ['manual', formData.type, 'infrastructure'],
+        data: {
+          locations: [{
+            id: finalData.id,
+            name: formData.name,
+            lat: formData.coordinates.lat,
+            lng: formData.coordinates.lng,
+            type: formData.type as 'pop' | 'subPop',
+            status: formData.status,
+            properties: {
+              unique_id: formData.unique_id,
+              network_id: formData.network_id,
+              ref_code: formData.ref_code,
+              address: formData.address,
+              contact_name: formData.contact_name,
+              contact_no: formData.contact_no,
+              is_rented: formData.is_rented,
+              rent_amount: formData.rent_amount,
+              agreement_start_date: formData.agreement_start_date,
+              agreement_end_date: formData.agreement_end_date,
+              nature_of_business: formData.nature_of_business,
+              structure_type: formData.structure_type,
+              ups_availability: formData.ups_availability,
+              backup_capacity: formData.backup_capacity,
+              icon: formData.icon,
+              color: formData.color
+            }
+          }],
+          totalCount: 1,
+          categories: [formData.type.toUpperCase()]
+        },
+        source: 'manual' as const
+      };
+
+      const savedId = await saveData(infrastructureData);
+
+      addNotification({
+        type: 'success',
+        title: 'Location Saved',
+        message: `${formData.type.toUpperCase()} location "${formData.name}" has been saved successfully!`,
+        duration: 4000
+      });
+
+      // Also call the original onSave for backward compatibility
+      onSave(finalData);
+      onClose();
+
+    } catch (error) {
+      console.error('Failed to save location:', error);
+      addNotification({
+        type: 'error',
+        title: 'Save Failed',
+        message: 'Failed to save the location. Please try again.',
+        duration: 5000
+      });
+    }
   };
 
   const handleReset = () => {

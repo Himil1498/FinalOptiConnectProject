@@ -26,6 +26,9 @@ import {
   setFilters,
   setSearchTerm,
   clearFilters,
+  recordLoginAttempt,
+  validateUserCredentials,
+  checkAccountLockStatus,
   resetError
 } from "../store/slices/userManagementSlice";
 import { User, UserGroup, GroupMember } from "../types";
@@ -42,7 +45,9 @@ const MOCK_USERS: User[] = [
   {
     id: "1",
     email: "admin@opticonnect.com",
+    username: "admin",
     name: "Admin User",
+    password: "admin123", // In production, this should be hashed
     role: "admin",
     permissions: ["all"],
     assignedStates: [], // Admin has access to all states
@@ -53,7 +58,9 @@ const MOCK_USERS: User[] = [
   {
     id: "2",
     email: "manager@opticonnect.com",
+    username: "regmanager",
     name: "Regional Manager",
+    password: "manager123", // In production, this should be hashed
     role: "manager",
     permissions: [
       "read",
@@ -72,7 +79,9 @@ const MOCK_USERS: User[] = [
   {
     id: "3",
     email: "tech@opticonnect.com",
+    username: "fieldtech",
     name: "Field Technician",
+    password: "tech123", // In production, this should be hashed
     role: "technician",
     permissions: ["read", "write", "manage_equipment", "update_status"],
     assignedStates: ["Maharashtra"],
@@ -85,7 +94,9 @@ const MOCK_USERS: User[] = [
   {
     id: "4",
     email: "user@opticonnect.com",
+    username: "viewer",
     name: "Regular User",
+    password: "user123", // In production, this should be hashed
     role: "viewer",
     permissions: ["read", "view_basic_analytics"],
     assignedStates: ["Maharashtra", "Gujarat", "Rajasthan"],
@@ -136,6 +147,7 @@ const MOCK_USER_GROUPS: UserGroup[] = [
 export interface CreateUserData {
   name: string;
   email: string;
+  username: string;
   password: string;
   confirmPassword: string;
   phoneNumber?: string;
@@ -278,11 +290,19 @@ export const useUserManagement = () => {
         }
 
         // Validate email uniqueness
-        const existingUser = userManagementState.users.find(
+        const existingUserByEmail = userManagementState.users.find(
           (u: User) => u.email === userData.email
         );
-        if (existingUser) {
+        if (existingUserByEmail) {
           throw new Error("Email already exists");
+        }
+
+        // Validate username uniqueness
+        const existingUserByUsername = userManagementState.users.find(
+          (u: User) => u.username === userData.username
+        );
+        if (existingUserByUsername) {
+          throw new Error("Username already exists");
         }
 
         // Validate assigned states
@@ -298,6 +318,8 @@ export const useUserManagement = () => {
           id: `user-${Date.now()}`, // In production, this would come from backend
           name: userData.name,
           email: userData.email,
+          username: userData.username,
+          password: userData.password, // In production, this should be hashed
           role: userData.role,
           permissions: Object.keys(userData.permissions)
             .filter(
@@ -430,6 +452,83 @@ export const useUserManagement = () => {
     [dispatch]
   );
 
+  // User Group management operations
+  const createUserGroup = useCallback(
+    async (groupData: Omit<UserGroup, 'id' | 'createdAt' | 'updatedAt' | 'memberCount'>): Promise<string> => {
+      dispatch(setLoading({ type: "groups", loading: true }));
+      try {
+        const newGroup: UserGroup = {
+          ...groupData,
+          id: `group-${Date.now()}`,
+          memberCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        dispatch(addUserGroup(newGroup));
+        dispatch(setError(null));
+        return newGroup.id;
+      } catch (error) {
+        dispatch(
+          setError(
+            error instanceof Error ? error.message : "Failed to create user group"
+          )
+        );
+        throw error;
+      }
+    },
+    [dispatch]
+  );
+
+  const updateUserGroupData = useCallback(
+    async (groupId: string, updates: Partial<UserGroup>): Promise<boolean> => {
+      dispatch(setLoading({ type: "groups", loading: true }));
+      try {
+        const group = userManagementState.userGroups.find((g) => g.id === groupId);
+        if (!group) {
+          throw new Error("User group not found");
+        }
+
+        const updatedGroup: UserGroup = {
+          ...group,
+          ...updates,
+          updatedAt: new Date().toISOString()
+        };
+
+        dispatch(updateUserGroup(updatedGroup));
+        dispatch(setError(null));
+        return true;
+      } catch (error) {
+        dispatch(
+          setError(
+            error instanceof Error ? error.message : "Failed to update user group"
+          )
+        );
+        return false;
+      }
+    },
+    [dispatch, userManagementState.userGroups]
+  );
+
+  const removeUserGroup = useCallback(
+    async (groupId: string): Promise<boolean> => {
+      dispatch(setLoading({ type: "groups", loading: true }));
+      try {
+        dispatch(deleteUserGroup(groupId));
+        dispatch(setError(null));
+        return true;
+      } catch (error) {
+        dispatch(
+          setError(
+            error instanceof Error ? error.message : "Failed to delete user group"
+          )
+        );
+        return false;
+      }
+    },
+    [dispatch]
+  );
+
   // Get role-based recommendations
   const getUserRecommendations = useCallback((partialUser: Partial<User>) => {
     return getRecommendedStates(partialUser);
@@ -441,6 +540,58 @@ export const useUserManagement = () => {
       (user) => user.role === "admin" || user.role === "manager"
     );
   }, [userManagementState.users]);
+
+  // Authentication functions
+  const authenticateUser = useCallback(
+    async (emailOrUsername: string, password: string): Promise<{ success: boolean; user?: User; message?: string }> => {
+      try {
+        // Check account lock status first
+        dispatch(checkAccountLockStatus(emailOrUsername));
+
+        // Validate credentials
+        dispatch(validateUserCredentials({ email: emailOrUsername, password }));
+
+        // Check if validation was successful - search by email or username
+        const user = userManagementState.users.find(u =>
+          (u.email === emailOrUsername || u.username === emailOrUsername) && u.isActive
+        );
+        if (user && user.password === password) {
+          // Record successful login
+          dispatch(recordLoginAttempt({ email: emailOrUsername, success: true }));
+          return { success: true, user: { ...user, password: undefined } }; // Don't return password
+        } else {
+          // Record failed login
+          dispatch(recordLoginAttempt({ email: emailOrUsername, success: false }));
+          return { success: false, message: "Invalid email/username or password" };
+        }
+      } catch (error) {
+        dispatch(recordLoginAttempt({ email: emailOrUsername, success: false }));
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : "Authentication failed"
+        };
+      }
+    },
+    [dispatch, userManagementState.users]
+  );
+
+  const isAccountLocked = useCallback(
+    (email: string): { locked: boolean; unlockTime?: string } => {
+      const attempt = userManagementState.loginAttempts[email];
+      if (attempt?.lockedUntil && new Date(attempt.lockedUntil) > new Date()) {
+        return { locked: true, unlockTime: attempt.lockedUntil };
+      }
+      return { locked: false };
+    },
+    [userManagementState.loginAttempts]
+  );
+
+  const getLoginAttempts = useCallback(
+    (email: string): number => {
+      return userManagementState.loginAttempts[email]?.count || 0;
+    },
+    [userManagementState.loginAttempts]
+  );
 
   return {
     // State
@@ -460,6 +611,16 @@ export const useUserManagement = () => {
     deleteUser: removeUser,
     getUserRecommendations,
     getAvailableParentUsers,
+
+    // User Group Operations
+    createUserGroup,
+    updateUserGroup: updateUserGroupData,
+    deleteUserGroup: removeUserGroup,
+
+    // Authentication
+    authenticateUser,
+    isAccountLocked,
+    getLoginAttempts,
 
     // UI Actions
     setCreatingUser: (creating: boolean) => dispatch(setCreatingUser(creating)),
